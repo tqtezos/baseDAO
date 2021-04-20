@@ -151,12 +151,29 @@ type last_period_change =
   ; period_num : nat
   }
 
-// -- Storage -- //
-
 type governance_token =
   { address : address
   ; token_id : token_id
   }
+
+type period = nat
+type level = nat
+type cycle = nat
+
+// Here we save both levels_per_cycle and cycles_per_period because we need to
+// answer two questions.
+// What cycle are we at?
+//   This is computed as `levels_per_cycle_change_at.cycle + current_level - levels_per_cycle_change_at.level)/levels_per_cycle`.
+// What period are we at?
+//   This is computed as `cycles_per_period_change_at.period + (current_cycle - cycles_per_period_change_at.cycle)/cycles_per_period`.
+type voting_period_params =
+  { levels_per_cycle_change_at : (cycle * level) // first element is the cycle at which change happned, and second element is the first level of that cycle.
+  ; cycles_per_period_change_at : (period * cycle) // first element is the period at which change happned, and second element is the first cycle of that period.
+  ; levels_per_cycle : level
+  ; cycles_per_period : cycle
+  }
+
+// -- Storage -- //
 
 type storage =
   { ledger : ledger
@@ -175,12 +192,12 @@ type storage =
   ; freeze_history : freeze_history
   ; fixed_proposal_fee_in_token : nat
   ; frozen_token_id : token_id
-  ; last_period_change : last_period_change
+  ; voting_period_params : voting_period_params
   }
 
 // -- Parameter -- //
 
-type freeze_param = nat
+type freeze_param = (nat * key_hash)
 type unfreeze_param = nat
 
 type transfer_ownership_param = address

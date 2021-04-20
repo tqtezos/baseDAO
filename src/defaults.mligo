@@ -36,7 +36,12 @@ let default_storage (admin , governance_token, now_val, metadata : address * gov
         ];
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
-    last_period_change = {changed_on = now_val; period_num = 0n}
+    voting_period_params =
+      { levels_per_cycle_change_at = (0n, 0n)
+      ; cycles_per_period_change_at = (0n, 0n)
+      ; levels_per_cycle = 4096n
+      ; cycles_per_period = 5n
+      }
 }
 
 let default_full_storage (admin, governance_token, now_val, metadata_map : address * governance_token * timestamp * metadata_map) : full_storage =
