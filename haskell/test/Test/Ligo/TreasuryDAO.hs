@@ -22,7 +22,7 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  (OriginateFn, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
+  (OriginateFn, addressToKeyHash, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -64,7 +64,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     proposalSize = metadataSize proposalMeta
 
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! proposalSize)
+    call dao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash owner1))
 
   -- Advance one voting period.
   advanceTime (sec 1.5)
@@ -97,10 +97,10 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposeParams = ProposeParams proposalSize proposalMeta
 
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! proposalSize)
+    call dao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash owner1))
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 20)
+    call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner2))
 
   -- Advance one voting period (which is 1).
   advanceTime (sec 1.5)
@@ -145,10 +145,10 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3))
+    call dao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3), #keyhash .! (addressToKeyHash owner1))
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 10)
+    call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner2))
   -- Advance one voting period.
   advanceTime (sec 1.5)
 

@@ -36,7 +36,7 @@ validProposal originateFn = do
 
   advanceTime (sec 10)
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 10)
+    call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   -- Check the token contract got a transfer call from
   -- baseDAO
   checkStorage (AddressResolved $ unTAddress tokenContract)
@@ -63,7 +63,7 @@ rejectProposal originateFn = do
         }
 
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 10)
+    call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
@@ -87,7 +87,7 @@ voteValidProposal originateFn = do
   advanceTime (sec 120)
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
+    call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
 
   -- Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 120 owner1 dao
