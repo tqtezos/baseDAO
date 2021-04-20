@@ -44,6 +44,7 @@ type proposal_type =
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal
   | Transfer_proposal of transfer_type list
+  | VotingPeriodConstantsUpdate of voting_period_params
 
 type lookup_registry_param =
   [@layout:comb]

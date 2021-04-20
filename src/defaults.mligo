@@ -4,10 +4,10 @@
 #include "types.mligo"
 
 let default_config : config = {
-    proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
-    rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
-    decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
-
+    proposal_check = (fun (_, _ : propose_params * contract_extra) -> true);
+    rejected_proposal_return_value = (fun (_, _ : proposal * contract_extra) -> 0n);
+    decision_lambda = (fun (_, extras : proposal * contract_extra) -> (([] : (operation list))
+      , ((None : voting_period_params option), extras)));
     max_proposals = 500n;
     max_votes = 1000n;
     max_quorum_threshold = {numerator = 99n; denominator = 100n}; // 99%
@@ -36,7 +36,12 @@ let default_storage (admin , governance_token, now_val, metadata : address * gov
         ];
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
-    last_period_change = {changed_on = now_val; period_num = 0n}
+    voting_period_params =
+      { levels_per_cycle_change_at = (0n, 0n)
+      ; cycles_per_period_change_at = (0n, 0n)
+      ; levels_per_cycle = 4096n
+      ; cycles_per_period = 5n
+      }
 }
 
 let default_full_storage (admin, governance_token, now_val, metadata_map : address * governance_token * timestamp * metadata_map) : full_storage =

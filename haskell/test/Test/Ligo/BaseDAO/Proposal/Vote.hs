@@ -29,7 +29,7 @@ voteNonExistingProposal originateFn = do
   advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
+    call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
 
   -- Create sample proposal
   _ <- createSampleProposal 1 15 owner1 dao
@@ -50,10 +50,10 @@ voteMultiProposals originateFn = do
 
   advanceTime (sec 120)
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 20)
+    call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner1))
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 5)
+    call dao (Call @"Freeze") (#amount .! 5, #keyhash .! (addressToKeyHash owner2))
   advanceTime (sec 120)
 
   -- Create sample proposal
@@ -85,7 +85,7 @@ voteOutdatedProposal originateFn = do
   advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
+    call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
   -- Create sample proposal
   key1 <- createSampleProposal 1 10 owner1 dao
 

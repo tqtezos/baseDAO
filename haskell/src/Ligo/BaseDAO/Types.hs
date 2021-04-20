@@ -412,7 +412,7 @@ type CallCustomParam = (MText, ByteString)
 -- | Utility type containing an entrypoint name and its packed lambda.
 type CustomEntrypoint = (MText, ByteString)
 
-type FreezeParam = ("amount" :! Natural)
+type FreezeParam = ("amount" :! Natural, "keyhash" :! KeyHash)
 type UnfreezeParam = ("amount" :! Natural)
 
 -- NOTE: Constructors of the parameter types should remain sorted for the
@@ -456,7 +456,6 @@ data LastPeriodChange = LastPeriodChange
 
 data AddressFreezeHistory = AddressFreezeHistory
   { fhCurrentUnstaked :: Natural
-  , fhPastUnstaked :: Natural
   , fhCurrentPeriodNum :: Natural
   , fhStaked :: Natural
   } deriving stock (Eq, Show)
@@ -468,6 +467,21 @@ data GovernanceToken = GovernanceToken
 
 customGeneric "GovernanceToken" ligoLayout
 deriving anyclass instance IsoValue GovernanceToken
+
+
+type Cycle = Natural
+type Period = Natural
+type Level = Natural
+
+data VotingPeriodParams = VotingPeriodParams
+  { vpLevelsPerCycle :: Natural
+  , vpCyclesPerPeriod :: Natural
+  , vpLevelsPerCycleChangeAt :: (Cycle, Level)
+  , vpCyclesPerPeriodChangeAt :: (Period, Cycle)
+  } deriving stock (Eq, Show)
+
+customGeneric "VotingPeriodParams" ligoLayout
+deriving anyclass instance IsoValue VotingPeriodParams
 
 data Storage = Storage
   { sAdmin :: Address
@@ -485,10 +499,13 @@ data Storage = Storage
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
-  , sLastPeriodChange :: LastPeriodChange
   , sFixedProposalFeeInToken :: Natural
+  , sVotingPeriodParams :: VotingPeriodParams
   }
   deriving stock (Show)
+
+instance HasAnnotation VotingPeriodParams where
+  annOptions = baseDaoAnnOptions
 
 instance HasAnnotation GovernanceToken where
   annOptions = baseDaoAnnOptions
@@ -542,9 +559,14 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now tokenAddress =
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0)]
     , sFreezeHistory = mempty
-    , sLastPeriodChange = LastPeriodChange 0 (arg #now now)
     , sFixedProposalFeeInToken = 0
     , sFrozenTokenId = frozenTokenId
+    , sVotingPeriodParams = VotingPeriodParams
+        { vpLevelsPerCycle = 4096
+        , vpCyclesPerPeriod = 5
+        , vpCyclesPerPeriodChangeAt = (0, 0)
+        , vpLevelsPerCycleChangeAt = (0, 0)
+        }
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
