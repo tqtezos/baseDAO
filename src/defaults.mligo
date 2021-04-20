@@ -4,10 +4,10 @@
 #include "types.mligo"
 
 let default_config : config = {
-    proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
-    rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
-    decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
-
+    proposal_check = (fun (_, _ : propose_params * contract_extra) -> true);
+    rejected_proposal_return_value = (fun (_, _ : proposal * contract_extra) -> 0n);
+    decision_lambda = (fun (_, extras : proposal * contract_extra) -> (([] : (operation list))
+      , ((None : voting_period_params option), extras)));
     max_proposals = 500n;
     max_votes = 1000n;
     max_quorum_threshold = {numerator = 99n; denominator = 100n}; // 99%

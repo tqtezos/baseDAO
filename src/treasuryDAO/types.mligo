@@ -29,3 +29,7 @@ type treasury_contract_extra =
   * tez // min_xtz_amount
   * tez // max_xtz_amount
   )
+
+type proposal_type =
+  | Transfer_proposal of transfer_type list
+  | VotingPeriodConstantsUpdate of voting_period_params

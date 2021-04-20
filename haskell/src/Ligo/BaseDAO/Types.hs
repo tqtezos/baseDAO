@@ -412,7 +412,7 @@ type CallCustomParam = (MText, ByteString)
 -- | Utility type containing an entrypoint name and its packed lambda.
 type CustomEntrypoint = (MText, ByteString)
 
-type FreezeParam = ("amount" :! Natural)
+type FreezeParam = ("amount" :! Natural, "keyhash" :! KeyHash)
 type UnfreezeParam = ("amount" :! Natural)
 
 -- NOTE: Constructors of the parameter types should remain sorted for the
