@@ -456,7 +456,6 @@ data LastPeriodChange = LastPeriodChange
 
 data AddressFreezeHistory = AddressFreezeHistory
   { fhCurrentUnstaked :: Natural
-  , fhPastUnstaked :: Natural
   , fhCurrentPeriodNum :: Natural
   , fhStaked :: Natural
   } deriving stock (Eq, Show)

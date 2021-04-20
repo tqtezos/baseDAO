@@ -72,7 +72,6 @@ checkFreezeHistoryTracking  = do
                   { fhCurrentPeriodNum = 2
                   , fhCurrentUnstaked = 0
                   , fhStaked = requiredFrozen
-                  , fhPastUnstaked = 0
                   }
             when (fh /= (Just expected)) $ Left $ CustomTestError "BaseDAO contract did not stake tokens as expected"
 
@@ -87,7 +86,6 @@ checkFreezeHistoryTracking  = do
                   { fhCurrentPeriodNum = 4
                   , fhCurrentUnstaked = 0
                   , fhStaked = 0
-                  , fhPastUnstaked = requiredFrozen
                   }
             when (fh /= (Just expected)) $
               Left $ CustomTestError "BaseDAO contract did not unstake tokens after voting period"

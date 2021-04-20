@@ -29,8 +29,7 @@ type ledger = (ledger_key, ledger_value) big_map
 type address_freeze_history =
   { current_period_num : nat
   ; staked : nat
-  ; current_unstaked : nat
-  ; past_unstaked : nat
+  ; unstaked : nat
   }
 
 type freeze_history = (address, address_freeze_history) big_map
