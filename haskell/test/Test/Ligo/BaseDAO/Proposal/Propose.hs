@@ -48,6 +48,8 @@ vote how addr key =
 downvote :: Address -> ProposalKey -> PermitProtected VoteParam
 downvote = vote False
 
+type instance AsRPC FA2.TransferItem = FA2.TransferItem
+
 validProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> GetFrozenTotalSupplyFn m -> GetFreezeHistoryFn m -> m ()
@@ -63,8 +65,10 @@ validProposal originateFn getFrozenTotalSupplyFn getFreezeHistoryFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Check the token contract got a transfer call from
   -- baseDAO
-  checkStorage (unTAddress dodTokenContract)
-    (toVal [[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
+  storage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  assert (storage ==
+    ([[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]]))
+    "Unexpected Transfers"
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
@@ -172,7 +176,7 @@ cannotProposeWithInsufficientTokens = do
         , ppFrom = dodOwner1
         }
   withSender proposer $ call dodDao (Call @"Propose") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
 
 rejectProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -192,7 +196,7 @@ rejectProposal originateFn = do
   advanceLevel dodPeriod
 
   (withSender dodOwner1 $ call dodDao (Call @"Propose") params)
-    & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooSmallXtzErrMsg
+    & expectCustomError #fAIL_PROPOSAL_CHECK tooSmallXtzErrMsg
 
 nonUniqueProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -207,7 +211,7 @@ nonUniqueProposal originateFn = do
   advanceLevel dodPeriod
   _ <- createSampleProposal 1 dodOwner1 dodDao
   createSampleProposal 1 dodOwner1 dodDao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
 
 nonUniqueProposalEvenAfterDrop
   :: (MonadNettest caps base m, HasCallStack)
@@ -223,7 +227,7 @@ nonUniqueProposalEvenAfterDrop originateFn = do
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   createSampleProposal 1 dodOwner1 dodDao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
 
 nonProposalPeriodProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -244,7 +248,7 @@ nonProposalPeriodProposal originateFn = do
         }
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
-    & expectCustomErrorNoArg #nOT_PROPOSING_STAGE dodDao
+    & expectCustomErrorNoArg #nOT_PROPOSING_STAGE
 
 burnsFeeOnFailure
   :: forall caps base m. (MonadNettest caps base m)
@@ -367,7 +371,7 @@ insufficientTokenProposal originateFn getProposalAmountFn = do
         }
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
   amt <- getProposalAmountFn (unTAddress dodDao)
   amt @== 0
 
@@ -405,7 +409,7 @@ insufficientTokenVote originateFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
 
 dropProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -451,7 +455,7 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
   -- `key2` is not yet expired since it has to be more than 60 seconds
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key2
-      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dodDao
+      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET
 
   advanceLevel (dodPeriod + 1)
   -- `key2` is expired, so it is possible to `drop_proposal`
@@ -461,7 +465,7 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
   -- `key3` is not yet expired
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dodDao
+      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET
 
   -- proposers can delete their proposal
   withSender dodOwner1 $ do
@@ -470,7 +474,7 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
   -- calling drop proposal again results in an error
   withSender dodOwner1 $ do
     call dodDao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+      & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
   -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
   checkBalanceFn (unTAddress dodDao) dodOwner1 15
@@ -499,5 +503,5 @@ proposalBoundedValue originateFn = do
   withSender dodOwner1 $ do
     call dodDao (Call @"Propose") params
     call dodDao (Call @"Propose") params
-      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED dodDao
+      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
 

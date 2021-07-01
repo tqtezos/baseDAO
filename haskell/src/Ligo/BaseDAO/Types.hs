@@ -49,14 +49,11 @@ module Ligo.BaseDAO.Types
   , Proposal (..)
   , Parameter
   , FixedFee (..)
-  , Storage' (..)
-  , Storage
-  , StorageView
-  , Config' (..)
-  , Config
-  , FullStorage' (..)
-  , FullStorage
-  , FullStorageView
+  , Storage (..)
+  , StorageRPC (..)
+  , Config (..)
+  , FullStorage (..)
+  , FullStorageRPC(..)
   , AddressFreezeHistory (..)
   , DynamicRec
   , dynRecUnsafe
@@ -68,10 +65,10 @@ module Ligo.BaseDAO.Types
   , setExtra
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, (*))
 
-import Fmt (Buildable, build, genericF)
 import qualified Data.Map as M
+import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (now)
 import Lorentz.Annotation ()
@@ -80,7 +77,8 @@ import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Michelson.Typed.Annotation
 import Michelson.Typed.T (T(TUnit))
 import Michelson.Untyped.Annotation
-import Morley.Client (BigMapId(..))
+import Morley.Client
+import Morley.Nettest.Instances ()
 import Util.Markdown
 
 ------------------------------------------------------------------------
@@ -512,36 +510,42 @@ deriving anyclass instance IsoValue QuorumThresholdAtCycle
 instance HasAnnotation QuorumThresholdAtCycle where
   annOptions = baseDaoAnnOptions
 
-data Storage' big_map = Storage'
+type instance AsRPC (TZIP16.MetadataMap BigMap) = BigMapId MText ByteString
+type instance AsRPC (DynamicRec' BigMap s) = (DynamicRec' BigMapId s)
+type instance AsRPC FA2.TokenId = FA2.TokenId
+type instance AsRPC GovernanceToken = GovernanceToken
+type instance AsRPC Nonce = Nonce
+type instance AsRPC QuorumThresholdAtCycle = QuorumThresholdAtCycle
+type instance AsRPC GovernanceTotalSupply = GovernanceTotalSupply
+type instance AsRPC QuorumFraction = QuorumFraction
+type instance AsRPC Period = Period
+
+data Storage = Storage
   { sAdmin :: Address
   , sGuardian :: Address
-  , sExtra :: ContractExtra' big_map
+  , sExtra :: ContractExtra' BigMap
   , sFrozenTokenId :: FA2.TokenId
-  , sMetadata :: TZIP16.MetadataMap big_map
+  , sMetadata :: TZIP16.MetadataMap BigMap
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
-  , sProposals :: big_map ProposalKey Proposal
+  , sProposals :: BigMap ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
   , sGovernanceToken :: GovernanceToken
-  , sFreezeHistory :: big_map Address AddressFreezeHistory
+  , sFreezeHistory :: BigMap Address AddressFreezeHistory
   , sStartLevel :: Natural
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   , sFrozenTotalSupply :: Natural
-  , sDelegates :: Delegates' big_map
+  , sDelegates :: Delegates' BigMap
   }
 
-customGeneric "Storage'" ligoLayout
+customGeneric "Storage" ligoLayout
 
-type Storage = Storage' BigMap
 deriving stock instance Show Storage
 deriving anyclass instance IsoValue Storage
 instance HasAnnotation Storage where
   annOptions = baseDaoAnnOptions
 
-type StorageView = Storage' BigMapId
-deriving stock instance Show StorageView
-deriving anyclass instance IsoValue StorageView
-
+deriveRPCWithStrategy "Storage" ligoLayout
 
 instance HasAnnotation GovernanceToken where
   annOptions = baseDaoAnnOptions
@@ -567,7 +571,7 @@ mkStorage
   -> "quorumThreshold" :! QuorumThreshold
   -> Storage
 mkStorage admin extra metadata lvl tokenAddress qt =
-  Storage'
+  Storage
     { sAdmin = arg #admin admin
     , sGuardian = arg #admin admin
     , sExtra = arg #extra extra
@@ -607,40 +611,40 @@ newtype FixedFee = FixedFee Natural
   deriving newtype Num
   deriving anyclass IsoValue
 
-data DecisionLambdaInput big_map = DecisionLambdaInput
+type instance AsRPC FixedFee = FixedFee
+
+data DecisionLambdaInput = DecisionLambdaInput
   { diProposal :: Proposal
-  , diExtra :: ContractExtra' big_map
+  , diExtra :: ContractExtra
   }
 
 customGeneric "DecisionLambdaInput" ligoLayout
 
-deriving anyclass instance IsoValue (DecisionLambdaInput BigMap)
-deriving anyclass instance IsoValue (DecisionLambdaInput BigMapId)
-deriving stock instance Show (DecisionLambdaInput BigMap)
+deriving anyclass instance IsoValue DecisionLambdaInput
+deriving stock instance Show DecisionLambdaInput
 
-instance HasAnnotation (DecisionLambdaInput BigMap) where
+instance HasAnnotation DecisionLambdaInput where
   annOptions = baseDaoAnnOptions
 
-data DecisionLambdaOutput big_map = DecisionLambdaOutput
+data DecisionLambdaOutput = DecisionLambdaOutput
   { doOperations :: List Operation
-  , doExtra :: ContractExtra' big_map
+  , doExtra :: ContractExtra
   , doGuardian :: Maybe Address
   }
 
 customGeneric "DecisionLambdaOutput" ligoLayout
 
-deriving anyclass instance IsoValue (DecisionLambdaOutput BigMap)
-deriving anyclass instance IsoValue (DecisionLambdaOutput BigMapId)
-deriving stock instance Show (DecisionLambdaOutput BigMap)
+deriving anyclass instance IsoValue DecisionLambdaOutput
+deriving stock instance Show DecisionLambdaOutput
 
-instance HasAnnotation (DecisionLambdaOutput BigMap) where
+instance HasAnnotation DecisionLambdaOutput where
   annOptions = baseDaoAnnOptions
 
-data Config' big_map = Config'
-  { cProposalCheck :: '[ProposeParams, ContractExtra' big_map] :-> '[()]
-  , cRejectedProposalSlashValue :: '[Proposal, ContractExtra' big_map]
+data Config = Config
+  { cProposalCheck :: '[ProposeParams, ContractExtra] :-> '[()]
+  , cRejectedProposalSlashValue :: '[Proposal, ContractExtra]
       :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[DecisionLambdaInput big_map] :-> '[DecisionLambdaOutput big_map]
+  , cDecisionLambda :: '[DecisionLambdaInput] :-> '[DecisionLambdaOutput]
 
   , cMaxProposals :: Natural
   , cMaxVoters :: Natural
@@ -655,20 +659,17 @@ data Config' big_map = Config'
   , cProposalFlushTime :: Natural
   , cProposalExpiredTime :: Natural
 
-  , cCustomEntrypoints :: CustomEntrypoints' big_map
+  , cCustomEntrypoints :: CustomEntrypoints
   }
 
-customGeneric "Config'" ligoLayout
+customGeneric "Config" ligoLayout
 
-type Config = Config' BigMap
 deriving stock instance Show Config
 deriving anyclass instance IsoValue Config
 instance HasAnnotation Config where
   annOptions = baseDaoAnnOptions
 
-type ConfigView = Config' BigMapId
-deriving stock instance Show ConfigView
-deriving anyclass instance IsoValue ConfigView
+deriveRPCWithStrategy "Config" ligoLayout
 
 mkConfig
   :: [CustomEntrypoint]
@@ -678,7 +679,7 @@ mkConfig
   -> Natural
   -> GovernanceTotalSupply
   -> Config
-mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config'
+mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config
   { cProposalCheck = do
       dropN @2; push ()
   , cRejectedProposalSlashValue = do
@@ -688,8 +689,8 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
       nil
       swap
       dip (push Nothing)
-      constructStack @(DecisionLambdaOutput BigMap)
-  , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
+      constructStack @DecisionLambdaOutput
+  , cCustomEntrypoints = DynamicRec' $ BigMap Nothing $ M.fromList customEps
   , cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod
   , cProposalFlushTime = (unPeriod votingPeriod) * 2
@@ -707,30 +708,21 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
 defaultConfig :: Config
 defaultConfig = mkConfig [] 10 0 19 5 500
 
-data FullStorage' big_map = FullStorage'
-  { fsStorage :: Storage' big_map
-  , fsConfig :: Config' big_map
+data FullStorage = FullStorage
+  { fsStorage :: Storage
+  , fsConfig :: Config
   }
 
 -- Note: FullStorage is a tuple in ligo, so we need to use `ligoCombLayout`
 -- Derive Generic on `FullStorage'` does not work.
-customGeneric "FullStorage'" ligoCombLayout
+customGeneric "FullStorage" ligoCombLayout
 
-type FullStorage = FullStorage' BigMap
 deriving stock instance Show FullStorage
 deriving anyclass instance IsoValue FullStorage
 instance HasAnnotation FullStorage where
   annOptions = baseDaoAnnOptions
 
--- | Represents a storage value retrieved using the Tezos RPC.
---
--- 'FullStorageView' is very similar to 'FullStorage',
--- except 'BigMap's have been replaced by 'BigMapId'.
--- This is because, when a contract's storage is queried, the Tezos RPC returns
--- big_maps' IDs instead of their contents.
-type FullStorageView = FullStorage' BigMapId
-deriving stock instance Show FullStorageView
-deriving anyclass instance IsoValue FullStorageView
+deriveRPCWithStrategy "FullStorage" ligoCombLayout
 
 mkFullStorage
   :: "admin" :! Address
@@ -745,7 +737,7 @@ mkFullStorage
   -> "tokenAddress" :! Address
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStorage'
+mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStorage
   { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
       (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
@@ -755,10 +747,10 @@ mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStora
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
 
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
-setExtra key v (s@FullStorage' {..}) = s { fsStorage = newStorage }
+setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
   where
-    (BigMap oldExtra) = unDynamic $ sExtra fsStorage
-    newExtra = BigMap $ M.insert key (lPackValueRaw v) oldExtra
+    (BigMap bid oldExtra) = unDynamic $ sExtra fsStorage
+    newExtra = BigMap bid $ M.insert key (lPackValueRaw v) oldExtra
     newStorage = fsStorage { sExtra = DynamicRec' newExtra }
 
 -- Instances

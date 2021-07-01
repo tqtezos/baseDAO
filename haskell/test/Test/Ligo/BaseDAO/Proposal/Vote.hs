@@ -54,7 +54,7 @@ voteNonExistingProposal originateFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
 voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -234,7 +234,7 @@ voteOutdatedProposal originateFn = do
     -- Advance two voting period to another voting stage.
     advanceLevel (2 * dodPeriod)
     call dodDao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_STAGE_OVER dodDao
+      & expectCustomErrorNoArg #vOTING_STAGE_OVER
 
 voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -297,7 +297,7 @@ voteDeletedProposal originateFn = do
   advanceLevel dodPeriod
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
@@ -370,11 +370,11 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
     -- Outdated nonce
     call dodDao (Call @"Vote") [params1]
-      & expectCustomError #mISSIGNED dodDao (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
     -- Nonce from future
     call dodDao (Call @"Vote") [params3]
-      & expectCustomError #mISSIGNED dodDao (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
     -- Good nonce after the previous successful entrypoint call
     call dodDao (Call @"Vote") [params2]
@@ -419,4 +419,4 @@ votesBoundedValue originateFn = do
 
   withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [upvote']
-      & expectCustomErrorNoArg #mAX_VOTERS_REACHED dodDao
+      & expectCustomErrorNoArg #mAX_VOTERS_REACHED

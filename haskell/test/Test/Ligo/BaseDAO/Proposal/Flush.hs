@@ -304,9 +304,9 @@ flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushDecisionLambda originateFn = do
-  consumer <- originateSimple "consumer" [] contractConsumer
+  consumer <- chAddress <$> originateSimple @("proposer" :! Address) "consumer" [] contractConsumer
   DaoOriginateData{..} <-
-    originateFn ((decisionLambdaConfig consumer)
+    originateFn ((decisionLambdaConfig (TAddress consumer))
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
@@ -335,7 +335,7 @@ flushDecisionLambda originateFn = do
   advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  results <- fromVal <$> getStorage (toAddress consumer)
+  results <- getStorage @(["proposer" :! Address]) (toAddress consumer)
   assert (results == (#proposer <.!> [dodOwner1]))
     "Unexpected accepted proposals list"
 
@@ -379,7 +379,7 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
   advanceLevel (2*dodPeriod + 1)
   -- `key1` is now expired, and `key2` is not yet expired.
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
-    & expectCustomErrorNoArg #eXPIRED_PROPOSAL dodDao
+    & expectCustomErrorNoArg #eXPIRED_PROPOSAL
 
   -- `key1` is expired, so it is possible to `drop_proposal`
   withSender dodOwner2 $ do
@@ -435,7 +435,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
 
   -- no proposal exist at this point, so flush is empty
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-    & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
+    & expectCustomErrorNoArg #eMPTY_FLUSH
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 20)
   withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount .! 20)
@@ -459,7 +459,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   -- the proposal exists at this point (and has votes), but it can't be flushed
   -- yet, because it needs one more level to meet the `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-    & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
+    & expectCustomErrorNoArg #eMPTY_FLUSH
 
   -- however after one more level flushing is allowed
   advanceLevel 1

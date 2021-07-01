@@ -36,7 +36,7 @@ withOriginated
   -> ([Address] -> TAddress Parameter -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
+  addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
   baseDao <- originateUntyped $ UntypedOriginateData
     { uodName = "BaseDAO Test Contract"
     , uodBalance = zeroMutez

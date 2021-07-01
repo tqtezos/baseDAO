@@ -2,7 +2,6 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 module Test.Ligo.BaseDAO.Common.StorageHelper
   ( getFullStorage
-  , getFullStorageView
 
   , GetFrozenTotalSupplyFn
   , getFrozenTotalSupplyEmulator
@@ -35,15 +34,6 @@ import Morley.Nettest.Pure (PureM)
 
 import Ligo.BaseDAO.Types
 
-getFullStorage :: Address -> EmulatedT PureM FullStorage
-getFullStorage addr =
-  fromVal @FullStorage <$> getStorage' @(ToT FullStorage) addr
-
-getFullStorageView :: (Monad m) => Address -> NettestT m FullStorageView
-getFullStorageView addr =
-  fromVal @FullStorageView <$> getStorage @(ToT FullStorageView) addr
-
-
 ------------------------------------------------------------------------
 -- GetFrozenTotalSupplyFn
 ------------------------------------------------------------------------
@@ -52,7 +42,7 @@ type GetFrozenTotalSupplyFn m = Address -> m Natural
 
 getFrozenTotalSupplyEmulator :: Address -> EmulatedT PureM Natural
 getFrozenTotalSupplyEmulator addr = do
-  fs <- getFullStorage addr
+  fs <- getFullStorage @FullStorage addr
   pure $ sFrozenTotalSupply $ fsStorage fs
 
 ------------------------------------------------------------------------
@@ -63,25 +53,25 @@ type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
 
 getFreezeHistoryEmulator :: Address -> Address -> EmulatedT PureM (Maybe AddressFreezeHistory)
 getFreezeHistoryEmulator addr owner =
-  (M.lookup owner . unBigMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
+  (M.lookup owner . bmMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
 
 type CheckGuardianFn m = Address -> Address -> m ()
 
 checkGuardianEmulator :: Address -> Address -> EmulatedT PureM ()
 checkGuardianEmulator addr guardianToChk = do
-  actual <- (sGuardian . fsStorage) <$> (getFullStorage addr)
+  actual <- (sGuardian . fsStorage) <$> (getFullStorage @FullStorage addr)
   actual @== guardianToChk
 
 type GetQuorumThresholdAtCycleFn m = Address -> m QuorumThresholdAtCycle
 
 getQtAtCycleEmulator :: Address -> EmulatedT PureM QuorumThresholdAtCycle
-getQtAtCycleEmulator addr = (sQuorumThresholdAtCycle . fsStorage) <$> getFullStorage addr
+getQtAtCycleEmulator addr = (sQuorumThresholdAtCycle . fsStorage) <$> getFullStorage @FullStorage addr
 
 type GetProposalFn m = Address -> ProposalKey -> m (Maybe Proposal)
 
 getProposalEmulator :: Address -> ProposalKey -> EmulatedT PureM (Maybe Proposal)
 getProposalEmulator addr pKey =
-  (M.lookup pKey . unBigMap . sProposals . fsStorage) <$> getFullStorage addr
+  (M.lookup pKey . bmMap . sProposals . fsStorage) <$> getFullStorage addr
 
 
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
@@ -109,7 +99,7 @@ type GetVotePermitsCounterFn m = Address -> m Nonce
 
 getVotePermitsCounterEmulator :: Address -> EmulatedT PureM Nonce
 getVotePermitsCounterEmulator addr = do
-  fs <- getFullStorage addr
+  fs <- getFullStorage @FullStorage addr
   pure $ sPermitsCounter (fsStorage fs)
 
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator

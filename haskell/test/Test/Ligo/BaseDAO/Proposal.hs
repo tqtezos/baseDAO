@@ -13,6 +13,7 @@ import Morley.Nettest.Tasty (nettestScenarioOnEmulatorCaps, nettestScenarioOnNet
 import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Types
+import Morley.Nettest
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Flush
 import Test.Ligo.BaseDAO.Proposal.Propose
@@ -71,10 +72,10 @@ test_BaseDAO_Proposal =
 
   -- Note: When checking storage, we need to split the test into 2 (emulator and network) as demonstrated below:
   , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens (emulator) " $
-      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorage @FullStorage addr)
 
   , nettestScenarioOnNetworkCaps "cannot propose with insufficient tokens (network) " $
-      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorageView addr)
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorage @FullStorage addr)
 
   , testGroup "Permit:"
       [ nettestScenarioOnEmulatorCaps "can vote from another user behalf" $

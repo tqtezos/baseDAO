@@ -13,6 +13,7 @@ module Test.Ligo.BaseDAO.Common
   , permitProtect
   , sendXtz
 
+  , checkStorage
   , createSampleProposal
   , createSampleProposals
   , defaultQuorumThreshold
@@ -27,7 +28,7 @@ module Test.Ligo.BaseDAO.Common
 
 import Universum hiding (drop, swap)
 
-import Lorentz hiding (now, (>>))
+import Lorentz hiding (assert, now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
@@ -41,6 +42,8 @@ import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
 type OriginateFn m = QuorumThreshold -> m DaoOriginateData
+
+type instance AsRPC FA2.TransferItem = FA2.TransferItem
 
 data DaoOriginateData = DaoOriginateData
   { dodOwner1 :: Address
@@ -149,20 +152,20 @@ originateLigoDaoWithConfig extra config qt = do
   admin :: Address <- newAddress "admin"
 
   currentLevel <- getLevel
-  tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
-  guardianContract <- originateSimple "guardian" () dummyGuardianContract
+  tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
+  guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
-  let fullStorage = FullStorage'
+  let fullStorage = FullStorage
         { fsStorage =
             ( mkStorage
               ! #extra extra
               ! #admin admin
               ! #metadata mempty
-              ! #tokenAddress (unTAddress tokenContract)
+              ! #tokenAddress tokenContract
               ! #level currentLevel
               ! #quorumThreshold qt
             )
-            { sGuardian = unTAddress guardianContract
+            { sGuardian = guardianContract
             }
         , fsConfig = config
         }
@@ -178,8 +181,8 @@ originateLigoDaoWithConfig extra config qt = do
 
   let dao = TAddress @Parameter daoUntyped
 
-  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract
-      admin guardianContract (unPeriod $ cPeriod config)
+  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao (TAddress tokenContract)
+      admin (TAddress guardianContract) (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
  :: MonadNettest caps base m
@@ -225,3 +228,11 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
     return ()
   pure (pk1, pk2)
 
+checkStorage
+  :: forall caps base m st.
+      ( AsRPC st ~ st, MonadNettest caps base m
+      , HasCallStack, Eq st, NiceStorage st, NiceUnpackedValue st)
+  => Address -> st -> m ()
+checkStorage addr expected = do
+  realSt <- getStorage @st addr
+  assert (expected == realSt) "Unexpected storage"

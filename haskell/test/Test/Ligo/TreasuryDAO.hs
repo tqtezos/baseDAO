@@ -94,7 +94,7 @@ validProposal checkBalanceFn = withFrozenCallStack $ do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 (proposalSize + 1) proposalMeta)
-    & expectCustomError #fAIL_PROPOSAL_CHECK dodDao incorrectTokenAmountErrMsg
+    & expectCustomError #fAIL_PROPOSAL_CHECK incorrectTokenAmountErrMsg
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
@@ -176,11 +176,11 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
   withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 1)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooSmallXtzErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK tooSmallXtzErrMsg
 
   -- due to bigger than max_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 6)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeXtzErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK tooLargeXtzErrMsg
 
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
@@ -272,7 +272,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao zeroMutezErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK zeroMutezErrMsg
 
 proposalCheckBiggerThanMaxProposalSize
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -295,7 +295,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 largeProposalSize largeProposalMeta)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeProposalErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK tooLargeProposalErrMsg
 
 
 --------------------------------------------------------------------------
@@ -328,7 +328,7 @@ originateTreasuryDao
  -> OriginateFn m
 originateTreasuryDao modifyStorageFn =
   let fs = fromVal ($(fetchValue @FullStorage "haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
-      FullStorage'{..} = fs
+      FullStorage{..} = fs
         & setExtra @Natural [mt|frozen_scale_value|] 1
         & setExtra @Natural [mt|frozen_extra_value|] 0
         & setExtra @Natural [mt|slash_scale_value|] 1

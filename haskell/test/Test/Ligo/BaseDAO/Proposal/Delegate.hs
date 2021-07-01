@@ -65,10 +65,10 @@ addRemoveDelegate originateFn = do
     call dodDao (Call @"Update_delegate") [param False]
 
   withSender dodOperator1 $ call dodDao (Call @"Vote") [vote]
-    & expectCustomErrorNoArg #nOT_DELEGATE dodDao
+    & expectCustomErrorNoArg #nOT_DELEGATE
   advanceLevel dodPeriod
   withSender dodOperator1 $ call dodDao (Call @"Propose") (params 2)
-    & expectCustomErrorNoArg #nOT_DELEGATE dodDao
+    & expectCustomErrorNoArg #nOT_DELEGATE
 
 
 updateDelegates
@@ -84,7 +84,7 @@ updateDelegates originateFn getDelegateFn = do
         }
 
   -- Before Delegate set
-  BigMap delegates1 <- getDelegateFn (unTAddress dodDao)
+  BigMap _ delegates1 <- getDelegateFn (unTAddress dodDao)
   M.member (Delegate dodOwner1 dodOperator1) delegates1 @== False
   M.member (Delegate dodOwner1 dodOperator2) delegates1 @== False
 
@@ -92,7 +92,7 @@ updateDelegates originateFn getDelegateFn = do
   withSender dodOwner1 $
     call dodDao (Call @"Update_delegate") [mkDelegate dodOperator1 True]
 
-  BigMap delegates2 <- getDelegateFn (unTAddress dodDao)
+  BigMap _ delegates2 <- getDelegateFn (unTAddress dodDao)
   M.member (Delegate dodOwner1 dodOperator1) delegates2 @== True
   M.member (Delegate dodOwner1 dodOperator2) delegates2 @== False
 
@@ -101,7 +101,7 @@ updateDelegates originateFn getDelegateFn = do
     call dodDao (Call @"Update_delegate")
       [mkDelegate dodOperator1 False, mkDelegate dodOperator2 True]
 
-  BigMap delegates3 <- getDelegateFn (unTAddress dodDao)
+  BigMap _ delegates3 <- getDelegateFn (unTAddress dodDao)
   M.member (Delegate dodOwner1 dodOperator1) delegates3 @== False
   M.member (Delegate dodOwner1 dodOperator2) delegates3 @== True
 
@@ -110,5 +110,5 @@ updateDelegates originateFn getDelegateFn = do
   withSender dodOwner1 $
     call dodDao (Call @"Update_delegate") [mkDelegate someAddr False]
 
-  BigMap delegates4 <- getDelegateFn (unTAddress dodDao)
+  BigMap _ delegates4 <- getDelegateFn (unTAddress dodDao)
   M.member (Delegate dodOwner1 someAddr) delegates4 @== False
