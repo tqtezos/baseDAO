@@ -183,6 +183,8 @@ test_BaseDAO_Proposal =
 
     , nettestScenarioOnEmulatorCaps "the frozen tokens are correctly unstaked when address cast multiple votes" $
         unstakesTokensForMultipleVotes getFreezeHistoryEmulator
+    , nettestScenarioOnNetworkCaps "proposal endpoint stress test" $
+        proposalCreationUnderStorageLimit (originateLigoDaoWithConfigDesc dynRecUnsafe)
     ]
 
   , testGroup "QuorumThreshold Updates"
