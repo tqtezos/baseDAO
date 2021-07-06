@@ -16,6 +16,7 @@ module Test.Ligo.BaseDAO.Management.TransferOwnership
   , pendingOwnerNotTheSame
   , rewritePendingOwner
   , transferOwnership
+  , transferOwnershipSetsPendingOwner
   ) where
 
 import Universum
@@ -25,7 +26,7 @@ import Morley.Nettest
 import Util.Named
 
 import Ligo.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common ()
+import Test.Ligo.BaseDAO.Common
 
 type WithOriginateFn m = Integer
   -> ([Address] -> FullStorage)
@@ -41,6 +42,15 @@ transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     withSender wallet1 $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
       & expectNotAdmin
+
+transferOwnershipSetsPendingOwner
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+transferOwnershipSetsPendingOwner withOriginatedFn initialStorage =
+  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[owner, wallet1] baseDao -> do
+    withSender owner $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
+    mNewPendingOwner <- (sPendingOwnerRPC . fsStorageRPC) <$> getStorageRPC baseDao
+    assert (mNewPendingOwner == wallet1) "Pending owner was not set as expected"
 
 authenticateSender
   :: MonadNettest caps base m

@@ -51,13 +51,13 @@ test_TreasuryDAO :: TestTree
 test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   [ testGroup "Proposal creator:"
       [ nettestScenarioOnEmulatorCaps "can propose a valid proposal" $
-          validProposal checkBalanceEmulator
+          validProposal
       , nettestScenarioOnEmulatorCaps "can flush a Token transfer proposal" $
-          flushTokenTransfer checkBalanceEmulator
+          flushTokenTransfer
       , nettestScenarioOnEmulatorCaps "can flush a Xtz transfer proposal" $
-          flushXtzTransfer checkBalanceEmulator
+          flushXtzTransfer
       , nettestScenarioOnEmulatorCaps "can flush a Update_guardian proposal" $
-          flushUpdateGuardian checkGuardianEmulator
+          flushUpdateGuardian
       ]
 
   , testGroup "proposal_check:"
@@ -74,8 +74,8 @@ metadataSize md = fromIntegral $ BS.length md
 
 validProposal
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
-  => CheckBalanceFn m -> m ()
-validProposal checkBalanceFn = withFrozenCallStack $ do
+  => m ()
+validProposal = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -99,12 +99,12 @@ validProposal checkBalanceFn = withFrozenCallStack $ do
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 (proposalSize)
+  checkBalance dodDao dodOwner1 (proposalSize)
 
 flushTokenTransfer
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
-  => CheckBalanceFn m -> m ()
-flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
+  => m ()
+flushTokenTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
   let
@@ -128,7 +128,7 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
+  checkBalance dodDao dodOwner1 proposalSize
 
   let
     upvote = NoPermit VoteParam
@@ -145,13 +145,13 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
   advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
-  checkBalanceFn (unTAddress dodDao) dodOwner2 20
+  checkBalance dodDao dodOwner1 proposalSize
+  checkBalance dodDao dodOwner2 20
 
 flushXtzTransfer
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
-  => CheckBalanceFn m -> m ()
-flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
+  => m ()
+flushXtzTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
   sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
@@ -185,7 +185,7 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 45
+  checkBalance dodDao dodOwner1 45
 
   let
     upvote = NoPermit VoteParam
@@ -206,8 +206,8 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
 
 flushUpdateGuardian
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
-  => CheckGuardianFn m -> m ()
-flushUpdateGuardian checkGuardian = withFrozenCallStack $ do
+  => m ()
+flushUpdateGuardian = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
   sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
@@ -244,7 +244,7 @@ flushUpdateGuardian checkGuardian = withFrozenCallStack $ do
   -- Advance one voting period to a proposing stage.
   advanceLevel $ (dodPeriod + 1) -- meet `proposal_flush_level`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkGuardian (unTAddress dodDao) dodOwner2
+  checkGuardian dodDao dodOwner2
 
 proposalCheckFailZeroMutez
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)

@@ -52,6 +52,7 @@ module Ligo.BaseDAO.Types
   , Storage (..)
   , StorageRPC (..)
   , Config (..)
+  , ConfigRPC (..)
   , FullStorage (..)
   , FullStorageRPC(..)
   , AddressFreezeHistory (..)
@@ -510,7 +511,6 @@ deriving anyclass instance IsoValue QuorumThresholdAtCycle
 instance HasAnnotation QuorumThresholdAtCycle where
   annOptions = baseDaoAnnOptions
 
-type instance AsRPC (TZIP16.MetadataMap BigMap) = BigMapId MText ByteString
 type instance AsRPC (DynamicRec' BigMap s) = (DynamicRec' BigMapId s)
 type instance AsRPC FA2.TokenId = FA2.TokenId
 type instance AsRPC GovernanceToken = GovernanceToken

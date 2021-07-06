@@ -243,7 +243,7 @@ test_RegistryDAO =
 
               let spent = div (requiredFrozen * slash_scale_value) slash_division_value
 
-              checkBalanceEmulator (unTAddress baseDao) wallet1 (requiredFrozen - spent)
+              checkBalance baseDao wallet1 (requiredFrozen - spent)
 
 
     , nettestScenarioOnEmulatorCaps "checks it correctly executes the proposal that has won" $ do
@@ -387,7 +387,7 @@ test_RegistryDAO =
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+            checkBalance baseDao wallet1 proposalSize
 
             let
               key1 = makeProposalKey proposeParams
@@ -405,8 +405,8 @@ test_RegistryDAO =
             advanceLevel (period + 1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
-            checkBalanceEmulator (unTAddress baseDao) wallet2 20
+            checkBalance baseDao wallet1 proposalSize
+            checkBalance baseDao wallet2 20
 
             checkStorage (unTAddress dodTokenContract)
               ( [ [ FA2.TransferItem { tiFrom = wallet2, tiTxs = [FA2.TransferDestination { tdTo = wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
@@ -452,7 +452,7 @@ test_RegistryDAO =
             withSender wallet $
               call baseDao (Call @"Propose") (proposeParams 3)
 
-            checkBalanceEmulator (unTAddress baseDao) wallet (proposalSize 3 + proposalSize 10)
+            checkBalance baseDao wallet (proposalSize 3 + proposalSize 10)
 
 
     , nettestScenarioOnEmulatorCaps "can flush a transfer proposal with registry updates" $
@@ -483,7 +483,7 @@ test_RegistryDAO =
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+            checkBalance baseDao wallet1 proposalSize
 
             -- Advance one voting period to a voting stage.
             advanceLevel period
@@ -502,8 +502,8 @@ test_RegistryDAO =
             checkStorage consumer ([([mt|testKey|], Just [mt|testValue|])])
 
             -- check the balance
-            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
-            checkBalanceEmulator (unTAddress baseDao) wallet2 50
+            checkBalance baseDao wallet1 proposalSize
+            checkBalance baseDao wallet2 50
 
             checkStorage (unTAddress dodTokenContract)
               [ [ FA2.TransferItem { tiFrom = wallet2, tiTxs = [FA2.TransferDestination { tdTo = wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
@@ -538,7 +538,7 @@ test_RegistryDAO =
               call baseDao (Call @"Propose") proposeParams
             let key1 = makeProposalKey proposeParams
 
-            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+            checkBalance baseDao wallet1 proposalSize
 
 
             let
@@ -581,7 +581,7 @@ test_RegistryDAO =
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+            checkBalance baseDao wallet1 proposalSize
 
             let
               key1 = makeProposalKey proposeParams
@@ -599,7 +599,7 @@ test_RegistryDAO =
             advanceLevel (period + 1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            checkGuardianEmulator (unTAddress baseDao) newGuardian
+            checkGuardian baseDao newGuardian
     ]
   ]
   where

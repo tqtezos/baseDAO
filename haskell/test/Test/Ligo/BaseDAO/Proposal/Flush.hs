@@ -31,8 +31,8 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 flushAcceptedProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> GetFreezeHistoryFn m -> m ()
-flushAcceptedProposals originateFn getFreezeHistoryFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushAcceptedProposals originateFn = do
 -- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
   DaoOriginateData{..} <- originateFn (testConfig
@@ -71,9 +71,9 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
     call dodDao (Call @"Vote") [upvote', downvote']
 
   -- Checking freezing histories of proposer and voters
-  fhOwner1 <- getFreezeHistoryFn (unTAddress dodDao) dodOwner1
+  fhOwner1 <- getFreezeHistory dodDao dodOwner1
   fhOwner1 @== Just (AddressFreezeHistory 0 0 1 10)
-  fhOwner2 <- getFreezeHistoryFn (unTAddress dodDao) dodOwner2
+  fhOwner2 <- getFreezeHistory dodDao dodOwner2
   fhOwner2 @== Just (AddressFreezeHistory 0 0 2 15)
 
   -- Advance one voting period to a proposing stage.
@@ -85,17 +85,16 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
 
-  fhOwner1' <- getFreezeHistoryFn (unTAddress dodDao) dodOwner1
+  fhOwner1' <- getFreezeHistory dodDao dodOwner1
   fhOwner1' @== Just (AddressFreezeHistory 0 10 3 0)
-  fhOwner2' <- getFreezeHistoryFn (unTAddress dodDao) dodOwner2
+  fhOwner2' <- getFreezeHistory dodDao dodOwner2
   fhOwner2' @== Just (AddressFreezeHistory 0 15 3 0)
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
+flushAcceptedProposalsWithAnAmount originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
         >>- (ConfigDesc $ Period 20)
@@ -138,19 +137,18 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
 
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 30
+  checkBalance dodDao dodOwner1 30
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
   -- key3 is rejected
-  checkBalanceFn (unTAddress dodDao) dodOwner1 25
+  checkBalance dodDao dodOwner1 25
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushRejectProposalQuorum originateFn checkBalanceFn = do
+flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
         >>- (ConfigDesc $ Period 20)
@@ -190,15 +188,14 @@ flushRejectProposalQuorum originateFn checkBalanceFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 05
-  checkBalanceFn (unTAddress dodDao) dodOwner2 05 -- Since voter tokens are not burned
+  checkBalance dodDao dodOwner1 05
+  checkBalance dodDao dodOwner2 05 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
+flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
           >>- (ConfigDesc (Period 20))
@@ -243,7 +240,7 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Check proposer balance
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
   advanceLevel (dodPeriod + 1)
@@ -253,15 +250,14 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 05
-  checkBalanceFn (unTAddress dodDao) dodOwner2 03
+  checkBalance dodDao dodOwner1 05
+  checkBalance dodDao dodOwner2 03
 
 flushWithBadConfig
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushWithBadConfig originateFn checkBalanceFn = do
+flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
     originateFn (badRejectedValueConfig
       >>- (ConfigDesc (Period 20))
@@ -297,8 +293,8 @@ flushWithBadConfig originateFn checkBalanceFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 0
-  checkBalanceFn (unTAddress dodDao) dodOwner2 3
+  checkBalance dodDao dodOwner1 0
+  checkBalance dodDao dodOwner2 3
 
 flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
@@ -342,9 +338,8 @@ flushDecisionLambda originateFn = do
 flushFailOnExpiredProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
+flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
@@ -386,14 +381,13 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key1
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
 
 flushProposalFlushTimeNotReach
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushProposalFlushTimeNotReach originateFn checkBalanceFn = do
+flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
     originateFn (testConfig
         >>- (ConfigDesc $ Period 20)
@@ -414,7 +408,7 @@ flushProposalFlushTimeNotReach originateFn checkBalanceFn = do
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkBalanceFn (unTAddress dodDao) dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
+  checkBalance dodDao dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao

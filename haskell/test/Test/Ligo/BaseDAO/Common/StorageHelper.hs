@@ -1,28 +1,15 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 module Test.Ligo.BaseDAO.Common.StorageHelper
-  ( getFullStorage
-
-  , GetFrozenTotalSupplyFn
-  , getFrozenTotalSupplyEmulator
-
-  , GetQuorumThresholdAtCycleFn
-  , getQtAtCycleEmulator
-
-  , CheckGuardianFn
-  , GetProposalFn
-  , checkGuardianEmulator
-  , getProposalEmulator
-
-  , GetFreezeHistoryFn
-  , getFreezeHistoryEmulator
-
-  , CheckBalanceFn
-  , checkBalanceEmulator
-
-  , GetVotePermitsCounterFn
-  , getVotePermitsCounterEmulator
-  -- , getVotePermitsCounterNetwork
+  ( checkBalance
+  , checkGuardian
+  , getFreezeHistory
+  , getFrozenTotalSupply
+  , getFullStorage
+  , getProposal
+  , getQtAtCycle
+  , getStorageRPC
+  , getVotePermitsCounter
   ) where
 
 import Lorentz hiding (assert, (>>))
@@ -34,45 +21,42 @@ import Morley.Nettest.Pure (PureM)
 
 import Ligo.BaseDAO.Types
 
+
+getStorageRPC :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m FullStorageRPC
+getStorageRPC addr = getStorage @FullStorage (unTAddress addr)
+
 ------------------------------------------------------------------------
 -- GetFrozenTotalSupplyFn
 ------------------------------------------------------------------------
 
-type GetFrozenTotalSupplyFn m = Address -> m Natural
-
-getFrozenTotalSupplyEmulator :: Address -> EmulatedT PureM Natural
-getFrozenTotalSupplyEmulator addr = do
-  fs <- getFullStorage @FullStorage addr
-  pure $ sFrozenTotalSupply $ fsStorage fs
+getFrozenTotalSupply :: forall p base caps m. MonadNettest caps base m => TAddress p -> m Natural
+getFrozenTotalSupply addr = (sFrozenTotalSupplyRPC . fsStorageRPC) <$> (getStorageRPC addr)
 
 ------------------------------------------------------------------------
 -- GetFreezeHistoryFn
 ------------------------------------------------------------------------
 
-type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
+getFreezeHistory :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
+getFreezeHistory addr owner = do
+  freezeHistoryBmId <- (sFreezeHistoryRPC . fsStorageRPC) <$> (getStorageRPC addr)
+  getBigMapValueMaybe freezeHistoryBmId owner
 
-getFreezeHistoryEmulator :: Address -> Address -> EmulatedT PureM (Maybe AddressFreezeHistory)
-getFreezeHistoryEmulator addr owner =
-  (M.lookup owner . bmMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
+getQtAtCycle :: forall p base caps m. MonadNettest caps base m => TAddress p -> m QuorumThresholdAtCycle
+getQtAtCycle addr = (sQuorumThresholdAtCycleRPC . fsStorageRPC) <$> getStorageRPC addr
 
-type CheckGuardianFn m = Address -> Address -> m ()
+getProposal
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> ProposalKey
+  -> m (Maybe Proposal)
+getProposal addr pKey = do
+  bId <- (sProposalsRPC . fsStorageRPC) <$> getStorageRPC addr
+  getBigMapValueMaybe bId pKey
 
-checkGuardianEmulator :: Address -> Address -> EmulatedT PureM ()
-checkGuardianEmulator addr guardianToChk = do
-  actual <- (sGuardian . fsStorage) <$> (getFullStorage @FullStorage addr)
+checkGuardian :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m ()
+checkGuardian addr guardianToChk = do
+  actual <- (sGuardianRPC . fsStorageRPC) <$> (getStorageRPC addr)
   actual @== guardianToChk
-
-type GetQuorumThresholdAtCycleFn m = Address -> m QuorumThresholdAtCycle
-
-getQtAtCycleEmulator :: Address -> EmulatedT PureM QuorumThresholdAtCycle
-getQtAtCycleEmulator addr = (sQuorumThresholdAtCycle . fsStorage) <$> getFullStorage @FullStorage addr
-
-type GetProposalFn m = Address -> ProposalKey -> m (Maybe Proposal)
-
-getProposalEmulator :: Address -> ProposalKey -> EmulatedT PureM (Maybe Proposal)
-getProposalEmulator addr pKey =
-  (M.lookup pKey . bmMap . sProposals . fsStorage) <$> getFullStorage addr
-
 
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
 -- anyway. Commented due to weeder.
@@ -81,11 +65,14 @@ getProposalEmulator addr pKey =
 -- CheckBalanceFn
 ------------------------------------------------------------------------
 
-type CheckBalanceFn m = Address -> Address -> Natural -> m ()
-
-checkBalanceEmulator :: Address -> Address -> Natural -> EmulatedT PureM ()
-checkBalanceEmulator addr owner bal = do
-  fh <- getFreezeHistoryEmulator addr owner
+checkBalance
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> Address
+  -> Natural
+  -> m ()
+checkBalance addr owner bal = do
+  fh <- getFreezeHistory addr owner
   (sumAddressFreezeHistory <$> fh) @== Just bal
 
 sumAddressFreezeHistory :: AddressFreezeHistory -> Natural
@@ -95,12 +82,9 @@ sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUns
 -- GetVotePermitsCounter
 ------------------------------------------------------------------------
 
-type GetVotePermitsCounterFn m = Address -> m Nonce
-
-getVotePermitsCounterEmulator :: Address -> EmulatedT PureM Nonce
-getVotePermitsCounterEmulator addr = do
-  fs <- getFullStorage @FullStorage addr
-  pure $ sPermitsCounter (fsStorage fs)
+getVotePermitsCounter :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Nonce
+getVotePermitsCounter addr =
+  (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC addr
 
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
 -- anyway. Commented due to weeder.

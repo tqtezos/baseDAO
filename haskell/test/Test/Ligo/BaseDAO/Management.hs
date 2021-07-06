@@ -56,7 +56,7 @@ test_BaseDAO_Management =
 
     , nettestScenarioCaps "sets pending owner" $ do
         current_level <- getLevel
-        transferOwnership withOriginated (initialStorage current_level)
+        transferOwnershipSetsPendingOwner withOriginated (initialStorage current_level)
 
     , nettestScenarioCaps "does not set administrator" $ do
         current_level <- getLevel
