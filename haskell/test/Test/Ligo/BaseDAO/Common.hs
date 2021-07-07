@@ -119,17 +119,6 @@ sendXtz addr epName pm = withFrozenCallStack $ do
         }
   transfer transferData
 
-
--- TODO: Implement this via [#31] instead
--- checkIfAProposalExist
---   :: MonadNettest caps base m
---   => ProposalKey -> TAddress (Parameter TestProposalMetadata) -> m ()
--- checkIfAProposalExist proposalKey dodDao = do
---   owner :: Address <- newAddress "owner"
---   consumer <- originateSimple "consumer" [] contractConsumer
---   -- | If the proposal exists, there should be no error
---   callFrom owner dodDao (Call @"Proposal_metadata") (mkView proposalKey consumer)
-
 -- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
 -- Check if certain field in storage
 -- checkPropertyOfProposal :: _

@@ -25,6 +25,7 @@ import Util.Named
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Common.StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -81,9 +82,7 @@ flushAcceptedProposals originateFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
-
+  checkIfAProposalExist key1 dodDao False
 
   fhOwner1' <- getFreezeHistory dodDao dodOwner1
   fhOwner1' @== Just (AddressFreezeHistory 0 10 3 0)
@@ -185,8 +184,7 @@ flushRejectProposalQuorum originateFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
   checkBalance dodDao dodOwner1 05
   checkBalance dodDao dodOwner2 05 -- Since voter tokens are not burned
@@ -247,8 +245,7 @@ flushRejectProposalNegativeVotes originateFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
   checkBalance dodDao dodOwner1 05
   checkBalance dodDao dodOwner2 03
@@ -290,8 +287,7 @@ flushWithBadConfig originateFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
   checkBalance dodDao dodOwner1 0
   checkBalance dodDao dodOwner2 3
@@ -401,7 +397,7 @@ flushProposalFlushTimeNotReach originateFn = do
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
 
-  (_key1, _key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
+  (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   -- Advance two voting period to another proposing stage.
   advanceLevel dodPeriod -- skip voting period
   advanceLevel (dodPeriod + 1)
@@ -411,8 +407,8 @@ flushProposalFlushTimeNotReach originateFn = do
   checkBalance dodDao dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  -- checkIfAProposalExist (key2 :: ByteString) dodDao
+  checkIfAProposalExist key1 dodDao True
+  checkIfAProposalExist key2 dodDao True
 
 
 flushNotEmpty

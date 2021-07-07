@@ -93,6 +93,13 @@ voteMultiProposals originateFn = do
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
   checkBalance dodDao dodOwner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
+  getProposal dodDao key1 >>= \case
+    Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
+
+  getProposal dodDao key2 >>= \case
+    Just proposal -> assert ((plDownvotes proposal) == 3) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
 
 proposalCorrectlyTrackVotes
   :: (MonadNettest caps base m, HasCallStack)
@@ -265,6 +272,9 @@ voteValidProposal originateFn = do
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkBalance dodDao dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
+  getProposal dodDao key1 >>= \case
+    Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
   --
 voteDeletedProposal
   :: (MonadNettest caps base m, HasCallStack)

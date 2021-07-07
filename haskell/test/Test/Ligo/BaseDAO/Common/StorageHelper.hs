@@ -3,6 +3,7 @@
 module Test.Ligo.BaseDAO.Common.StorageHelper
   ( checkBalance
   , checkGuardian
+  , checkIfAProposalExist
   , getFreezeHistory
   , getFrozenTotalSupply
   , getFullStorage
@@ -52,6 +53,13 @@ getProposal
 getProposal addr pKey = do
   bId <- (sProposalsRPC . fsStorageRPC) <$> getStorageRPC addr
   getBigMapValueMaybe bId pKey
+
+-- TODO: Implement this via [#31] instead
+checkIfAProposalExist
+  :: forall p base caps m. MonadNettest caps base m
+  => ProposalKey -> TAddress p -> Bool -> m ()
+checkIfAProposalExist proposalKey dodDao expected =
+  getProposal dodDao proposalKey >>= (flip assert "Proposal not found" . (== expected) . isJust)
 
 checkGuardian :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m ()
 checkGuardian addr guardianToChk = do
