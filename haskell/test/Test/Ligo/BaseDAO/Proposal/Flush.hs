@@ -96,7 +96,6 @@ flushAcceptedProposalsWithAnAmount
 flushAcceptedProposalsWithAnAmount originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-        >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) defaultQuorumThreshold
@@ -150,7 +149,6 @@ flushRejectProposalQuorum
 flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-        >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) (mkQuorumThreshold 3 5)
@@ -196,7 +194,6 @@ flushRejectProposalNegativeVotes
 flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-          >>- (ConfigDesc (Period 20))
           >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
           >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
           ) (mkQuorumThreshold 3 100)
@@ -257,7 +254,6 @@ flushWithBadConfig
 flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
     originateFn (badRejectedValueConfig
-      >>- (ConfigDesc (Period 20))
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 2)
@@ -339,7 +335,6 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)
@@ -386,7 +381,6 @@ flushProposalFlushTimeNotReach
 flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
     originateFn (testConfig
-        >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) defaultQuorumThreshold
@@ -418,7 +412,6 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)

@@ -38,7 +38,7 @@ packages:
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: d68ff69824eae4aacd710821d0b83068de7b46ae # sras/bump-morley
+    commit: 36439956a2c108b29a259430de9153828db4c4a7 # sras/bump-morley
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git

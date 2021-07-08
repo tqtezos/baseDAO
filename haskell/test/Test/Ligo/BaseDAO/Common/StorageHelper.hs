@@ -26,16 +26,8 @@ import Ligo.BaseDAO.Types
 getStorageRPC :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m FullStorageRPC
 getStorageRPC addr = getStorage @FullStorage (unTAddress addr)
 
-------------------------------------------------------------------------
--- GetFrozenTotalSupplyFn
-------------------------------------------------------------------------
-
 getFrozenTotalSupply :: forall p base caps m. MonadNettest caps base m => TAddress p -> m Natural
 getFrozenTotalSupply addr = (sFrozenTotalSupplyRPC . fsStorageRPC) <$> (getStorageRPC addr)
-
-------------------------------------------------------------------------
--- GetFreezeHistoryFn
-------------------------------------------------------------------------
 
 getFreezeHistory :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
 getFreezeHistory addr owner = do
@@ -54,7 +46,6 @@ getProposal addr pKey = do
   bId <- (sProposalsRPC . fsStorageRPC) <$> getStorageRPC addr
   getBigMapValueMaybe bId pKey
 
--- TODO: Implement this via [#31] instead
 checkIfAProposalExist
   :: forall p base caps m. MonadNettest caps base m
   => ProposalKey -> TAddress p -> Bool -> m ()
@@ -65,13 +56,6 @@ checkGuardian :: forall p base caps m. MonadNettest caps base m => TAddress p ->
 checkGuardian addr guardianToChk = do
   actual <- (sGuardianRPC . fsStorageRPC) <$> (getStorageRPC addr)
   actual @== guardianToChk
-
--- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
--- anyway. Commented due to weeder.
-
-------------------------------------------------------------------------
--- CheckBalanceFn
-------------------------------------------------------------------------
 
 checkBalance
   :: forall p base caps m. MonadNettest caps base m
@@ -86,18 +70,6 @@ checkBalance addr owner bal = do
 sumAddressFreezeHistory :: AddressFreezeHistory -> Natural
 sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUnstaked + fhStaked
 
-------------------------------------------------------------------------
--- GetVotePermitsCounter
-------------------------------------------------------------------------
-
 getVotePermitsCounter :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Nonce
 getVotePermitsCounter addr =
   (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC addr
-
--- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
--- anyway. Commented due to weeder.
-
--- getVotePermitsCounterNetwork :: (Monad m) => Address -> NettestT m Nonce
--- getVotePermitsCounterNetwork addr = do
---   fs <- getFullStorageView addr
---   pure $ sPermitsCounter (fsStorage fs)

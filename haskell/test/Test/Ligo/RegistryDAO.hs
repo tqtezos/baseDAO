@@ -11,9 +11,10 @@ module Test.Ligo.RegistryDAO
 import Universum
 
 import qualified Data.ByteString as BS
+import qualified Data.Set as S
 import Test.Tasty (TestTree, testGroup)
 
-import Lorentz as L
+import Lorentz as L hiding (assert)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Test.Consumer
 import Michelson.Text (unsafeMkMText)
@@ -600,6 +601,107 @@ test_RegistryDAO =
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
             checkGuardian baseDao newGuardian
+
+    , nettestScenarioOnEmulatorCaps "checks it can flush an Update_receivers_proposal" $
+        withOriginated 3
+          (\(admin : _) ->
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin) $
+          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
+
+            let
+              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+                Update_receivers_proposal $ Add_receivers [wallet1, wallet2]
+
+              proposalSize = metadataSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
+
+            withSender wallet1 $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+            withSender wallet2 $
+              call baseDao (Call @"Freeze") (#amount .! 20)
+
+            -- Advance one voting period to a proposing stage.
+            advanceLevel period
+
+            withSender wallet1 $
+              call baseDao (Call @"Propose") proposeParams
+
+            checkBalance baseDao wallet1 proposalSize
+
+            let
+              key1 = makeProposalKey proposeParams
+              upvote = NoPermit VoteParam
+                  { vFrom = wallet2
+                  , vVoteType = True
+                  , vVoteAmount = 20
+                  , vProposalKey = key1
+                  }
+
+            -- Advance one voting period to a voting stage.
+            advanceLevel period
+            withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
+            -- Advance one voting period to a proposing stage.
+            advanceLevel (period + 1)
+            withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+
+            extraBigmapId <- (unDynamic . sExtraRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+            (lUnpackValueRaw . fromMaybe (error "")) <$> getBigMapValueMaybe extraBigmapId [mt|proposal_receivers|] >>= \case
+              Left _ -> error "Unpacking failed"
+              Right receiversSet ->
+                assert ((wallet1 `S.member` receiversSet) && (wallet2 `S.member` receiversSet))
+                  "Proposal receivers was not updated as expected"
+
+    , nettestScenarioOnEmulatorCaps "checks it can flush an Update_receivers_proposal, removal" $
+        withOriginated 3
+          (\(admin : wallet1 : wallet2 : _) ->
+            setExtra @(S.Set Address) [mt|max_proposal_size|] (S.fromList [wallet1, wallet2]) $
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin) $
+          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
+
+            let
+              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+                Update_receivers_proposal $ Remove_receivers [wallet1]
+
+              proposalSize = metadataSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
+
+            withSender wallet1 $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+            withSender wallet2 $
+              call baseDao (Call @"Freeze") (#amount .! 20)
+
+            -- Advance one voting period to a proposing stage.
+            advanceLevel period
+
+            withSender wallet1 $
+              call baseDao (Call @"Propose") proposeParams
+
+            checkBalance baseDao wallet1 proposalSize
+
+            let
+              key1 = makeProposalKey proposeParams
+              upvote = NoPermit VoteParam
+                  { vFrom = wallet2
+                  , vVoteType = True
+                  , vVoteAmount = 20
+                  , vProposalKey = key1
+                  }
+
+            -- Advance one voting period to a voting stage.
+            advanceLevel period
+            withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
+            -- Advance one voting period to a proposing stage.
+            advanceLevel (period + 1)
+            withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+
+            extraBigmapId <- (unDynamic . sExtraRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+            (lUnpackValueRaw . fromMaybe (error "")) <$> getBigMapValueMaybe extraBigmapId [mt|proposal_receivers|] >>= \case
+              Left _ -> error "Unpacking failed"
+              Right receiversSet ->
+                assert (Universum.not (wallet1 `S.member` receiversSet))
+                  "Proposal receivers was not updated as expected"
     ]
   ]
   where

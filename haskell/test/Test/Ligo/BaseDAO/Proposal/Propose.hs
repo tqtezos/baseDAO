@@ -54,7 +54,7 @@ validProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 validProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc (Period 20)) >>- testConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
@@ -88,7 +88,7 @@ validProposalWithFixedFee
   => m ()
 validProposalWithFixedFee = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 42) >>- ConfigDesc (Period 20)) defaultQuorumThreshold
+    originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 42)) defaultQuorumThreshold
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
@@ -200,7 +200,7 @@ nonUniqueProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 nonUniqueProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- testConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
@@ -215,7 +215,7 @@ nonUniqueProposalEvenAfterDrop
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 nonUniqueProposalEvenAfterDrop originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- testConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
@@ -231,7 +231,7 @@ nonProposalPeriodProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 nonProposalPeriodProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- testConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
@@ -415,7 +415,6 @@ dropProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)

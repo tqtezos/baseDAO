@@ -64,6 +64,7 @@ module Ligo.BaseDAO.Types
   , defaultConfig
   , mkFullStorage
   , setExtra
+  , unDynamic
   ) where
 
 import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, (*))
@@ -511,7 +512,7 @@ deriving anyclass instance IsoValue QuorumThresholdAtCycle
 instance HasAnnotation QuorumThresholdAtCycle where
   annOptions = baseDaoAnnOptions
 
-type instance AsRPC (DynamicRec' BigMap s) = (DynamicRec' BigMapId s)
+type instance AsRPC (DynamicRec s) = DynamicRecView s
 type instance AsRPC FA2.TokenId = FA2.TokenId
 type instance AsRPC GovernanceToken = GovernanceToken
 type instance AsRPC Nonce = Nonce

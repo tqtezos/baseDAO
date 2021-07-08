@@ -32,7 +32,7 @@ voteNonExistingProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteNonExistingProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- testConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
@@ -60,7 +60,7 @@ voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteMultiProposals originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- voteConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
@@ -106,7 +106,7 @@ proposalCorrectlyTrackVotes
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 proposalCorrectlyTrackVotes originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- voteConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   let proposer = dodOwner1
   let voter1 = dodOwner2
@@ -211,7 +211,7 @@ voteOutdatedProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteOutdatedProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- testConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
@@ -247,7 +247,7 @@ voteValidProposal
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 voteValidProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- voteConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
@@ -281,7 +281,7 @@ voteDeletedProposal
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 voteDeletedProposal originateFn = do
-  DaoOriginateData{..} <- originateFn ((ConfigDesc $ Period 20) >>- voteConfig) defaultQuorumThreshold
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
