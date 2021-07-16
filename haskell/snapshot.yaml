@@ -9,7 +9,7 @@ packages:
   - git:
       https://gitlab.com/morley-framework/indigo.git
     commit:
-      4ba66d2976c06d10b4686083ee25234106846504 # master
+      f47bc6a2b1320b4794b3e916c64d5a9885c63763 # master
     subdirs:
       - .
   - morley-prelude-0.4.0
@@ -29,7 +29,7 @@ packages:
       https://gitlab.com/morley-framework/morley.git
     # ^ CI cannot use ssh, so we use http clone here
     commit:
-      d73543e89c56b91d7bf0d5ab2d5feae737f650b1 # master
+      0898f537acb0866158d9134b401190b5dbabb89e # dmozhevitin/#611-fix-packing-behavior
     subdirs:
       - code/morley
       - code/lorentz
@@ -38,10 +38,10 @@ packages:
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 36439956a2c108b29a259430de9153828db4c4a7 # sras/bump-morley
+    commit: d0c96f4b05e4a008dc127905ffa03de6ec65627b # sras/bump-morley
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 8144c8871242bf5d369c892e29aeaf9882988502 # sras/bump-morley
+    commit: 574547c2f401da8f90df5e9534a6e591a1c0dea0 # sras/bump-morley
     subdirs:
       - code/morley-metadata
