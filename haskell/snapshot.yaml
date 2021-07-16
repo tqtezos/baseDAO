@@ -9,7 +9,7 @@ packages:
   - git:
       https://gitlab.com/morley-framework/indigo.git
     commit:
-      f47bc6a2b1320b4794b3e916c64d5a9885c63763 # master
+      f47bc6a2b1320b4794b3e916c64d5a9885c63763 # sras/bump-morley
     subdirs:
       - .
   - morley-prelude-0.4.0
@@ -38,7 +38,7 @@ packages:
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: d0c96f4b05e4a008dc127905ffa03de6ec65627b # sras/bump-morley
+    commit: c5e4910154c8a19756de1fed8077336688670f2a # sras/bump-morley
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
