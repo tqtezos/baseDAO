@@ -11,12 +11,12 @@ packages:
     git: https://gitlab.com/morley-framework/indigo.git
     pantry-tree:
       size: 14359
-      sha256: 822bdbf18dfbd575e34d05e6cf4a8e536fa952fc7bb22b09e0ce89c2085ad138
-    commit: f47bc6a2b1320b4794b3e916c64d5a9885c63763
+      sha256: fea56708f6b9817ff03c3d19d8fd35421a96dc03816ba83c5e6ce3ae9a846ce4
+    commit: 730c81220d4f8a249def482f3c3ae634780b4c86
   original:
     subdir: .
     git: https://gitlab.com/morley-framework/indigo.git
-    commit: f47bc6a2b1320b4794b3e916c64d5a9885c63763
+    commit: 730c81220d4f8a249def482f3c3ae634780b4c86
 - completed:
     hackage: morley-prelude-0.4.0@sha256:7234db1acac9a5554d01bdbf22d63b598c69b9fefaeace0fb6f765bf7bf738d4,2176
     pantry-tree:
@@ -103,12 +103,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 9911
-      sha256: a8d90c5012a2ea1ed2d22ead4acfe803a9b94352d94ad0aa16d4e2506c3ec5e8
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+      sha256: e22710121365cf349021275039e3efddfe8fcb2c222f006a9ce981332342372b
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
   original:
     subdir: code/morley
     git: https://gitlab.com/morley-framework/morley.git
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
 - completed:
     subdir: code/lorentz
     name: lorentz
@@ -117,11 +117,11 @@ packages:
     pantry-tree:
       size: 3873
       sha256: a6c32100e10172ff0ba8b0fa7ecf1fe25193dcac10933ddd4f13844c2b00c404
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
   original:
     subdir: code/lorentz
     git: https://gitlab.com/morley-framework/morley.git
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
 - completed:
     subdir: code/cleveland
     name: cleveland
@@ -129,12 +129,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 13651
-      sha256: 58761d77f65b10b4529f0671d7d6b255ef7ddd5a9dca11d5e61c1d6f4becbb75
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+      sha256: 8b7c8ef4129bbb7c4ab148d24a2e21bbb4b22cdcc6123bac459b04241332c729
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
   original:
     subdir: code/cleveland
     git: https://gitlab.com/morley-framework/morley.git
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
 - completed:
     subdir: code/morley-client
     name: morley-client
@@ -143,11 +143,11 @@ packages:
     pantry-tree:
       size: 3314
       sha256: bbf96ebcfd3113297a9cf17225cd99d5f063eccc43f22753ccad570bc64f5870
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: dce31f2af5ebb88b8cbfedb697ed81971e91f52d
+    commit: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
 - completed:
     name: caps
     version: '0'
@@ -167,11 +167,11 @@ packages:
     pantry-tree:
       size: 1524
       sha256: 97a34f184519dcac834718092004a6612ee111d25a80ae742a31832ee1a35e20
-    commit: c5e4910154c8a19756de1fed8077336688670f2a
+    commit: 7c00301f8acb5814bbf9c50e3c9f94c206692c5f
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: c5e4910154c8a19756de1fed8077336688670f2a
+    commit: 7c00301f8acb5814bbf9c50e3c9f94c206692c5f
 - completed:
     subdir: code/morley-metadata
     name: morley-metadata
@@ -180,11 +180,11 @@ packages:
     pantry-tree:
       size: 1216
       sha256: 2077c8a687cf270b3dc49557f6dfd7f9925ffafdcb3dd7d89d83e953c14556d4
-    commit: 66ae1945a3536f2891f971c4651ebdc803bfc710
+    commit: 890cd26e0b10bf5e36a7a9f786728ca287db1b88
   original:
     subdir: code/morley-metadata
     git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 66ae1945a3536f2891f971c4651ebdc803bfc710
+    commit: 890cd26e0b10bf5e36a7a9f786728ca287db1b88
 snapshots:
 - completed:
     size: 563099
