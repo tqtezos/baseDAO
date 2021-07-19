@@ -29,7 +29,7 @@ packages:
       https://gitlab.com/morley-framework/morley.git
     # ^ CI cannot use ssh, so we use http clone here
     commit:
-      0898f537acb0866158d9134b401190b5dbabb89e # dmozhevitin/#611-fix-packing-behavior
+      dce31f2af5ebb88b8cbfedb697ed81971e91f52d # dmozhevitin/#611-fix-packing-behavior
     subdirs:
       - code/morley
       - code/lorentz
