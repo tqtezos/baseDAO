@@ -42,6 +42,6 @@ packages:
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 574547c2f401da8f90df5e9534a6e591a1c0dea0 # sras/bump-morley
+    commit: 66ae1945a3536f2891f971c4651ebdc803bfc710 # sras/bump-morley
     subdirs:
       - code/morley-metadata
