@@ -12,7 +12,9 @@ packages:
       730c81220d4f8a249def482f3c3ae634780b4c86 # sras/bump-morley
     subdirs:
       - .
-  - morley-prelude-0.4.0
+  - morley-prelude-0.4.1
+  - morley-1.15.0
+  - lorentz-0.12.0
   - hex-text-0.1.0.0
   - named-0.3.0.1
   - show-type-0.1.1
@@ -31,14 +33,12 @@ packages:
     commit:
       1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b # master
     subdirs:
-      - code/morley
-      - code/lorentz
       - code/cleveland
       - code/morley-client
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 7c00301f8acb5814bbf9c50e3c9f94c206692c5f # sras/bump-morley
+    commit: 4f4fbc7bb1d2595e214aceef96270692aa206728 # sras/bump-morley
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
