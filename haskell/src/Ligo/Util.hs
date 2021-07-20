@@ -25,14 +25,14 @@ import Michelson.Typed
 --
 -- This is not an ideal implementation, e.g. it does not pretty-print
 -- types in error messages on types mismatch.
-fetchContract :: forall cp st. (KnownT cp, KnownT st) => String -> TH.ExpQ
+fetchContract :: forall cp st. (KnownIsoT cp, KnownIsoT st) => String -> TH.ExpQ
 fetchContract envKey = do
   path <- resolveSourcePath "haskell/test/baseDAO.tz" envKey
                           -- ↑ This default path works on CI.
                           -- There it's relative to the repo root, apparently.
   contract <- readDependentSource path
 
-  case readContract @cp @st path contract of
+  case readContract @(ToT cp) @(ToT st) path contract of
     Left e ->
       -- Emit a compiler error if the contract cannot be read.
       fail (pretty e)
@@ -47,7 +47,7 @@ fetchContract envKey = do
 
 
 -- | Reads a Michelson expression into a known typed value at compile type.
-fetchValue :: forall st. KnownT (ToT st) => FilePath -> String -> TH.ExpQ
+fetchValue :: forall st. KnownIsoT st => FilePath -> String -> TH.ExpQ
 fetchValue defaultPath envKey = do
   path <- resolveSourcePath defaultPath envKey
   valueLiteral <- readDependentSource path
@@ -55,7 +55,7 @@ fetchValue defaultPath envKey = do
 
 -- | Reads several Michelson expression from a directory into a list of
 -- known typed value at compile type.
-fetchValues :: forall st. KnownT (ToT st) => FilePath -> String -> TH.ExpQ
+fetchValues :: forall st. KnownIsoT st => FilePath -> String -> TH.ExpQ
 fetchValues defaultPath envKey = do
   dirPath <- resolveSourcePath defaultPath envKey
   filePaths <- liftIO $ listDirectory dirPath
@@ -63,7 +63,7 @@ fetchValues defaultPath envKey = do
   TH.listE $ map (verifiedFetchedValue @st) valueLiterals
 
 
-verifiedFetchedValue :: forall st. KnownT (ToT st) => Text -> TH.ExpQ
+verifiedFetchedValue :: forall st. KnownIsoT st => Text -> TH.ExpQ
 verifiedFetchedValue valueLiteral =
   case readValue @(ToT st) "" valueLiteral of
     Left e ->

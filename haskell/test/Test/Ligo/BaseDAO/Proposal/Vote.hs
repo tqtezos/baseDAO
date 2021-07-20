@@ -54,12 +54,12 @@ voteNonExistingProposal originateFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
 voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> CheckBalanceFn m -> m ()
-voteMultiProposals originateFn checkBalanceFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteMultiProposals originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
@@ -91,15 +91,21 @@ voteMultiProposals originateFn checkBalanceFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
-  checkBalanceFn (unTAddress dodDao) dodOwner2 5
+  checkBalance dodDao dodOwner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
+  getProposal dodDao key1 >>= \case
+    Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
+
+  getProposal dodDao key2 >>= \case
+    Just proposal -> assert ((plDownvotes proposal) == 3) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
 
 proposalCorrectlyTrackVotes
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> GetProposalFn m
   -> m ()
-proposalCorrectlyTrackVotes originateFn getProposalFn = do
+proposalCorrectlyTrackVotes originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   let proposer = dodOwner1
@@ -175,8 +181,8 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
   withSender voter2  do
     call dodDao (Call @"Vote") params2
 
-  proposal1 <- fromMaybe (error "proposal not found") <$> getProposalFn (unTAddress dodDao) key1
-  proposal2 <- fromMaybe (error "proposal not found") <$> getProposalFn (unTAddress dodDao) key2
+  proposal1 <- fromMaybe (error "proposal not found") <$> getProposal dodDao key1
+  proposal2 <- fromMaybe (error "proposal not found") <$> getProposal dodDao key2
 
   assert (plUpvotes proposal1 == 8) "proposal did not track upvotes correctly"
   assert (plDownvotes proposal1 == 2) "proposal did not track downvotes correctly"
@@ -234,14 +240,13 @@ voteOutdatedProposal originateFn = do
     -- Advance two voting period to another voting stage.
     advanceLevel (2 * dodPeriod)
     call dodDao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_STAGE_OVER dodDao
+      & expectCustomErrorNoArg #vOTING_STAGE_OVER
 
 voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-voteValidProposal originateFn checkBalanceFn = do
+voteValidProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
@@ -265,8 +270,11 @@ voteValidProposal originateFn checkBalanceFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkBalanceFn (unTAddress dodDao) dodOwner2 2
+  checkBalance dodDao dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
+  getProposal dodDao key1 >>= \case
+    Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
   --
 voteDeletedProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -297,12 +305,12 @@ voteDeletedProposal originateFn = do
   advanceLevel dodPeriod
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> CheckBalanceFn m -> m ()
-voteWithPermit originateFn checkBalanceFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteWithPermit originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 12)
@@ -325,12 +333,12 @@ voteWithPermit originateFn checkBalanceFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkBalanceFn (unTAddress dodDao) dodOwner1 12
+  checkBalance dodDao dodOwner1 12
 
 voteWithPermitNonce
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> GetVotePermitsCounterFn m -> m ()
-voteWithPermitNonce originateFn getVotePermitsCounterFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteWithPermitNonce originateFn = do
 
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
@@ -370,17 +378,17 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
     -- Outdated nonce
     call dodDao (Call @"Vote") [params1]
-      & expectCustomError #mISSIGNED dodDao (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
     -- Nonce from future
     call dodDao (Call @"Vote") [params3]
-      & expectCustomError #mISSIGNED dodDao (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
     -- Good nonce after the previous successful entrypoint call
     call dodDao (Call @"Vote") [params2]
 
   -- Check counter
-  (Nonce counter) <- getVotePermitsCounterFn (unTAddress dodDao)
+  (Nonce counter) <- getVotePermitsCounter dodDao
   counter @== 2
 
 votesBoundedValue
@@ -419,4 +427,4 @@ votesBoundedValue originateFn = do
 
   withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [upvote']
-      & expectCustomErrorNoArg #mAX_VOTERS_REACHED dodDao
+      & expectCustomErrorNoArg #mAX_VOTERS_REACHED

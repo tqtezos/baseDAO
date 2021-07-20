@@ -33,25 +33,25 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/indigo.git
-    tag: 34002106ca904e3dca6aff0237ad05dbbebcf619
+    tag: 730c81220d4f8a249def482f3c3ae634780b4c86
     subdir: .
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-ledgers.git
-    tag: b5b2834fd535ccc75e6ac31f3f406e627b1d7ad5
+    tag: 7c00301f8acb5814bbf9c50e3c9f94c206692c5f
     subdir: code/morley-ledgers
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-metadata.git
-    tag: 3062eecde947b865364534e0ab1180c12e73dd4f
+    tag: 890cd26e0b10bf5e36a7a9f786728ca287db1b88
     subdir: code/morley-metadata
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley.git
-    tag: ac7d485d35a81fe60658447e68710ac62b3f34ad
+    tag: 1e3ade657e4e895ae4e7c0a0b2f4cd7d918b205b
     subdir: code/cleveland
             code/lorentz
             code/morley

@@ -16,15 +16,17 @@ module Test.Ligo.BaseDAO.Management.TransferOwnership
   , pendingOwnerNotTheSame
   , rewritePendingOwner
   , transferOwnership
+  , transferOwnershipSetsPendingOwner
   ) where
 
 import Universum
 
-import Lorentz hiding ((>>))
+import Lorentz hiding (assert, (>>))
 import Morley.Nettest
 import Util.Named
 
 import Ligo.BaseDAO.Types
+import Test.Ligo.BaseDAO.Common
 
 type WithOriginateFn m = Integer
   -> ([Address] -> FullStorage)
@@ -39,7 +41,16 @@ transferOwnership
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     withSender wallet1 $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
-      & expectNotAdmin baseDao
+      & expectNotAdmin
+
+transferOwnershipSetsPendingOwner
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+transferOwnershipSetsPendingOwner withOriginatedFn initialStorage =
+  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[owner, wallet1] baseDao -> do
+    withSender owner $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
+    mNewPendingOwner <- (sPendingOwnerRPC . fsStorageRPC) <$> getStorageRPC baseDao
+    assert (mNewPendingOwner == wallet1) "Pending owner was not set as expected"
 
 authenticateSender
   :: MonadNettest caps base m
@@ -50,7 +61,7 @@ authenticateSender withOriginatedFn initialStorage =
       withSender owner $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
 
 changeToPendingAdmin
   :: MonadNettest caps base m
@@ -70,7 +81,7 @@ noPendingAdmin withOriginatedFn initialStorage =
     \[_, wallet1] baseDao -> do
       withSender wallet1 $
         call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
 
 pendingOwnerNotTheSame
   :: MonadNettest caps base m
@@ -81,7 +92,7 @@ pendingOwnerNotTheSame withOriginatedFn initialStorage =
       call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       call baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner baseDao
+      & expectNotPendingOwner
 
 notSetAdmin
   :: MonadNettest caps base m
@@ -112,7 +123,7 @@ rewritePendingOwner withOriginatedFn initialStorage =
         pure ()
       -- Make the accept ownership call from wallet1 and see that it fails
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
       -- Make the accept ownership call from wallet1 and see that it works
       withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
 
@@ -131,14 +142,14 @@ invalidatePendingOwner withOriginatedFn initialStorage =
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
 
 bypassAcceptForSelf
   :: MonadNettest caps base m
   => WithOriginateFn m -> WithStorage -> m ()
 bypassAcceptForSelf withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1] baseDao -> do
+  withOriginatedFn 1 (\(owner:_) -> initialStorage owner) $
+    \[owner] baseDao -> do
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
@@ -146,18 +157,16 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
-        & expectNotAdmin baseDao
-      -- But this should work
-      withSender (unTAddress baseDao) $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! wallet1)
+        & expectNotAdmin
+      currentAdmin <- (sAdminRPC . fsStorageRPC) <$> getStorage @FullStorage (unTAddress baseDao)
+      assert (currentAdmin == (unTAddress baseDao)) "Admin address was not set"
 
 expectNotAdmin
-  :: (MonadNettest caps base m, ToAddress addr)
-  => addr -> m a -> m ()
+  :: (MonadNettest caps base m)
+  => m a -> m ()
 expectNotAdmin = expectCustomErrorNoArg #nOT_ADMIN
 
 expectNotPendingOwner
-  :: (MonadNettest caps base m, ToAddress addr)
-  => addr -> m a -> m ()
+  :: (MonadNettest caps base m)
+  => m a -> m ()
 expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN

@@ -93,6 +93,7 @@ library:
     - Paths_baseDAO_ligo_meta
   dependencies:
     - containers
+    - cleveland
     - directory
     - filepath
     - text

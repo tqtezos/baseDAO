@@ -25,14 +25,15 @@ import Util.Named
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Common.StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 flushAcceptedProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> GetFreezeHistoryFn m -> m ()
-flushAcceptedProposals originateFn getFreezeHistoryFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushAcceptedProposals originateFn = do
 -- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
   DaoOriginateData{..} <- originateFn (testConfig
@@ -71,9 +72,9 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
     call dodDao (Call @"Vote") [upvote', downvote']
 
   -- Checking freezing histories of proposer and voters
-  fhOwner1 <- getFreezeHistoryFn (unTAddress dodDao) dodOwner1
+  fhOwner1 <- getFreezeHistory dodDao dodOwner1
   fhOwner1 @== Just (AddressFreezeHistory 0 0 1 10)
-  fhOwner2 <- getFreezeHistoryFn (unTAddress dodDao) dodOwner2
+  fhOwner2 <- getFreezeHistory dodDao dodOwner2
   fhOwner2 @== Just (AddressFreezeHistory 0 0 2 15)
 
   -- Advance one voting period to a proposing stage.
@@ -81,24 +82,20 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-
-  fhOwner1' <- getFreezeHistoryFn (unTAddress dodDao) dodOwner1
+  fhOwner1' <- getFreezeHistory dodDao dodOwner1
   fhOwner1' @== Just (AddressFreezeHistory 0 10 3 0)
-  fhOwner2' <- getFreezeHistoryFn (unTAddress dodDao) dodOwner2
+  fhOwner2' <- getFreezeHistory dodDao dodOwner2
   fhOwner2' @== Just (AddressFreezeHistory 0 15 3 0)
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
+flushAcceptedProposalsWithAnAmount originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-        >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) defaultQuorumThreshold
@@ -138,22 +135,20 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
 
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 30
+  checkBalance dodDao dodOwner1 30
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
   -- key3 is rejected
-  checkBalanceFn (unTAddress dodDao) dodOwner1 25
+  checkBalance dodDao dodOwner1 25
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushRejectProposalQuorum originateFn checkBalanceFn = do
+flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-        >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) (mkQuorumThreshold 3 5)
@@ -187,21 +182,18 @@ flushRejectProposalQuorum originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 05
-  checkBalanceFn (unTAddress dodDao) dodOwner2 05 -- Since voter tokens are not burned
+  checkBalance dodDao dodOwner1 05
+  checkBalance dodDao dodOwner2 05 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
+flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-          >>- (ConfigDesc (Period 20))
           >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
           >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
           ) (mkQuorumThreshold 3 100)
@@ -243,28 +235,25 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Check proposer balance
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
   advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 05
-  checkBalanceFn (unTAddress dodDao) dodOwner2 03
+  checkBalance dodDao dodOwner1 05
+  checkBalance dodDao dodOwner2 03
 
 flushWithBadConfig
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushWithBadConfig originateFn checkBalanceFn = do
+flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
     originateFn (badRejectedValueConfig
-      >>- (ConfigDesc (Period 20))
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 2)
@@ -294,19 +283,18 @@ flushWithBadConfig originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 0
-  checkBalanceFn (unTAddress dodDao) dodOwner2 3
+  checkBalance dodDao dodOwner1 0
+  checkBalance dodDao dodOwner2 3
 
 flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushDecisionLambda originateFn = do
-  consumer <- originateSimple "consumer" [] contractConsumer
+  consumer <- chAddress <$> originateSimple @("proposer" :! Address) "consumer" [] contractConsumer
   DaoOriginateData{..} <-
-    originateFn ((decisionLambdaConfig consumer)
+    originateFn ((decisionLambdaConfig (TAddress consumer))
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
@@ -335,20 +323,18 @@ flushDecisionLambda originateFn = do
   advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  results <- fromVal <$> getStorage (toAddress consumer)
+  results <- getStorage @(["proposer" :! Address]) (toAddress consumer)
   assert (results == (#proposer <.!> [dodOwner1]))
     "Unexpected accepted proposals list"
 
 flushFailOnExpiredProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
+flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)
@@ -379,24 +365,22 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
   advanceLevel (2*dodPeriod + 1)
   -- `key1` is now expired, and `key2` is not yet expired.
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
-    & expectCustomErrorNoArg #eXPIRED_PROPOSAL dodDao
+    & expectCustomErrorNoArg #eXPIRED_PROPOSAL
 
   -- `key1` is expired, so it is possible to `drop_proposal`
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key1
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
 
 flushProposalFlushTimeNotReach
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> CheckBalanceFn m
   -> m ()
-flushProposalFlushTimeNotReach originateFn checkBalanceFn = do
+flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
     originateFn (testConfig
-        >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) defaultQuorumThreshold
@@ -407,18 +391,18 @@ flushProposalFlushTimeNotReach originateFn checkBalanceFn = do
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
 
-  (_key1, _key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
+  (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   -- Advance two voting period to another proposing stage.
   advanceLevel dodPeriod -- skip voting period
   advanceLevel (dodPeriod + 1)
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkBalanceFn (unTAddress dodDao) dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
+  checkBalance dodDao dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  -- checkIfAProposalExist (key2 :: ByteString) dodDao
+  checkIfAProposalExist key1 dodDao True
+  checkIfAProposalExist key2 dodDao True
 
 
 flushNotEmpty
@@ -428,14 +412,13 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)
 
   -- no proposal exist at this point, so flush is empty
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-    & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
+    & expectCustomErrorNoArg #eMPTY_FLUSH
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 20)
   withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount .! 20)
@@ -459,7 +442,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   -- the proposal exists at this point (and has votes), but it can't be flushed
   -- yet, because it needs one more level to meet the `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-    & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
+    & expectCustomErrorNoArg #eMPTY_FLUSH
 
   -- however after one more level flushing is allowed
   advanceLevel 1
