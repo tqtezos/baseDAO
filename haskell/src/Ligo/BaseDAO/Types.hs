@@ -691,7 +691,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
       swap
       dip (push Nothing)
       constructStack @DecisionLambdaOutput
-  , cCustomEntrypoints = DynamicRec' $ BigMap Nothing $ M.fromList customEps
+  , cCustomEntrypoints = DynamicRec' $ mkBigMap customEps
   , cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod
   , cProposalFlushTime = (unPeriod votingPeriod) * 2
