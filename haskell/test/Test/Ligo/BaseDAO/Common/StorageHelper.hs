@@ -4,6 +4,7 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   ( checkBalance
   , checkGuardian
   , checkIfAProposalExist
+  , checkIfDelegateExists
   , getFreezeHistory
   , getFrozenTotalSupply
   , getFullStorage
@@ -45,6 +46,15 @@ getProposal
 getProposal addr pKey = do
   bId <- (sProposalsRPC . fsStorageRPC) <$> getStorageRPC addr
   getBigMapValueMaybe bId pKey
+
+checkIfDelegateExists
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> Delegate
+  -> m Bool
+checkIfDelegateExists addr delegate = do
+  bId <- (sDelegatesRPC . fsStorageRPC) <$> getStorageRPC addr
+  isJust <$> getBigMapValueMaybe bId delegate
 
 checkIfAProposalExist
   :: forall p base caps m. MonadNettest caps base m

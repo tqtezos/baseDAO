@@ -50,20 +50,20 @@ deriving anyclass instance IsoValue TreasuryDaoProposalMetadata
 test_TreasuryDAO :: TestTree
 test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   [ testGroup "Proposal creator:"
-      [ nettestScenarioOnEmulatorCaps "can propose a valid proposal" $
+      [ nettestScenarioCaps "can propose a valid proposal" $
           validProposal
-      , nettestScenarioOnEmulatorCaps "can flush a Token transfer proposal" $
+      , nettestScenarioCaps "can flush a Token transfer proposal" $
           flushTokenTransfer
-      , nettestScenarioOnEmulatorCaps "can flush a Xtz transfer proposal" $
+      , nettestScenarioCaps "can flush a Xtz transfer proposal" $
           flushXtzTransfer
-      , nettestScenarioOnEmulatorCaps "can flush a Update_guardian proposal" $
+      , nettestScenarioCaps "can flush a Update_guardian proposal" $
           flushUpdateGuardian
       ]
 
   , testGroup "proposal_check:"
-      [ nettestScenarioOnEmulatorCaps "fail when xtz transfer contains 0 mutez" $
+      [ nettestScenarioCaps "fail when xtz transfer contains 0 mutez" $
           proposalCheckFailZeroMutez
-      , nettestScenarioOnEmulatorCaps "fail when proposal size is bigger than max" $
+      , nettestScenarioCaps "fail when proposal size is bigger than max" $
           proposalCheckBiggerThanMaxProposalSize
       ]
   ]

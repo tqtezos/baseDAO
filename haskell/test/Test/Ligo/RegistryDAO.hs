@@ -22,7 +22,7 @@ import Michelson.Typed (convertContract)
 import Michelson.Typed.Convert (untypeValue)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenarioCaps, nettestScenarioOnEmulatorCaps)
+import Morley.Nettest.Tasty (nettestScenarioCaps)
 import Util.Named
 
 import Ligo.BaseDAO.Common.Types
@@ -118,7 +118,7 @@ toPeriod = unPeriod . cPeriod . fsConfig
 test_RegistryDAO :: [TestTree]
 test_RegistryDAO =
   [ testGroup "RegistryDAO Tests"
-    [ nettestScenarioOnEmulatorCaps "Calling the propose endpoint with an empty proposal works" $
+    [ nettestScenarioCaps "Calling the propose endpoint with an empty proposal works" $
         withOriginated 2
           (\(admin: _) -> initialStorageWithExplictRegistryDAOConfig admin) $
           \(_:wallet1:_) fs baseDao _ -> do
@@ -182,7 +182,7 @@ test_RegistryDAO =
                call baseDao (Call @"Propose") (ProposeParams wallet1 2 proposalMeta)
                & expectFailProposalCheck incorrectTokenAmountErrMsg
 
-    , nettestScenarioOnEmulatorCaps "check it correctly calculates required frozen tokens" $
+    , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
           (\(admin: _) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin) $
           \(_:wallet1:_) fs baseDao _ -> do
@@ -201,7 +201,7 @@ test_RegistryDAO =
             withSender wallet1 $
                call baseDao (Call @"Propose") (ProposeParams wallet1 (proposalSize + 2) proposalMeta)
 
-    , nettestScenarioOnEmulatorCaps "checks it correctly calculates tokens to burn when rejecting" $ do
+    , nettestScenarioCaps "checks it correctly calculates tokens to burn when rejecting" $ do
         let frozen_scale_value = 2
         let frozen_extra_value = 0
         let slash_scale_value = 1
@@ -247,7 +247,7 @@ test_RegistryDAO =
               checkBalance baseDao wallet1 (requiredFrozen - spent)
 
 
-    , nettestScenarioOnEmulatorCaps "checks it correctly executes the proposal that has won" $ do
+    , nettestScenarioCaps "checks it correctly executes the proposal that has won" $ do
         let frozen_scale_value = 1
         let frozen_extra_value = 0
         let slash_scale_value = 1
@@ -315,7 +315,7 @@ test_RegistryDAO =
               withSender wallet1 $
                 call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozen largeProposalMeta)
 
-    , nettestScenarioOnEmulatorCaps "checks on-chain view correctly returns the registry value" $ do
+    , nettestScenarioCaps "checks on-chain view correctly returns the registry value" $ do
         -- The default values assigned from initialStorageWithExplictRegistryDAOConfig function
         withOriginated 3
           (\(admin:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -361,7 +361,7 @@ test_RegistryDAO =
 
             --checkStorage (unTAddress consumer) (toVal [([mt|key|], Just [mt|testVal|])])
 
-    , nettestScenarioOnEmulatorCaps "checks it can flush a transfer type proposal (#66)" $
+    , nettestScenarioCaps "checks it can flush a transfer type proposal (#66)" $
         withOriginated 3
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -415,7 +415,7 @@ test_RegistryDAO =
                 , [ FA2.TransferItem { tiFrom = wallet1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
                 ])
 
-    , nettestScenarioOnEmulatorCaps "checks it can propose a valid xtz type proposal (#66)" $
+    , nettestScenarioCaps "checks it can propose a valid xtz type proposal (#66)" $
         withOriginated 2
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -456,7 +456,7 @@ test_RegistryDAO =
             checkBalance baseDao wallet (proposalSize 3 + proposalSize 10)
 
 
-    , nettestScenarioOnEmulatorCaps "can flush a transfer proposal with registry updates" $
+    , nettestScenarioCaps "can flush a transfer proposal with registry updates" $
         withOriginated 3
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -512,7 +512,7 @@ test_RegistryDAO =
                 , [ FA2.TransferItem { tiFrom = wallet1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
               ]
 
-    , nettestScenarioOnEmulatorCaps "checks it can transfer with receive_xtz_entrypoint (#66)" $
+    , nettestScenarioCaps "checks it can transfer with receive_xtz_entrypoint (#66)" $
         withOriginated 3
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -557,7 +557,7 @@ test_RegistryDAO =
             advanceLevel (period+1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-    , nettestScenarioOnEmulatorCaps "checks it can flush a proposal that updates guardian address" $
+    , nettestScenarioCaps "checks it can flush a proposal that updates guardian address" $
         withOriginated 4
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -602,7 +602,7 @@ test_RegistryDAO =
 
             checkGuardian baseDao newGuardian
 
-    , nettestScenarioOnEmulatorCaps "checks it can flush an Update_receivers_proposal" $
+    , nettestScenarioCaps "checks it can flush an Update_receivers_proposal" $
         withOriginated 3
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -652,10 +652,10 @@ test_RegistryDAO =
                 assert ((wallet1 `S.member` receiversSet) && (wallet2 `S.member` receiversSet))
                   "Proposal receivers was not updated as expected"
 
-    , nettestScenarioOnEmulatorCaps "checks it can flush an Update_receivers_proposal, removal" $
+    , nettestScenarioCaps "checks it can flush an Update_receivers_proposal - removal" $
         withOriginated 3
           (\(admin : wallet1 : wallet2 : _) ->
-            setExtra @(S.Set Address) [mt|max_proposal_size|] (S.fromList [wallet1, wallet2]) $
+            setExtra @(S.Set Address) [mt|proposal_receivers|] (S.fromList [wallet1, wallet2]) $
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
