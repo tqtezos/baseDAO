@@ -18,6 +18,7 @@ import System.Directory (listDirectory)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
+import Lorentz.Constraints.Scopes
 import Michelson.Runtime.Import (readContract, readValue)
 import Michelson.Typed
 
@@ -25,7 +26,7 @@ import Michelson.Typed
 --
 -- This is not an ideal implementation, e.g. it does not pretty-print
 -- types in error messages on types mismatch.
-fetchContract :: forall cp st. (KnownIsoT cp, KnownIsoT st) => String -> TH.ExpQ
+fetchContract :: forall cp st. (KnownValue cp, KnownValue st) => String -> TH.ExpQ
 fetchContract envKey = do
   path <- resolveSourcePath "haskell/test/baseDAO.tz" envKey
                           -- ↑ This default path works on CI.

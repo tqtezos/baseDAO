@@ -13,4 +13,4 @@ import Ligo.Util
 
 baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
 baseDAOContractLigo =
- $(fetchContract @(ToT Parameter) @(ToT FullStorage) "BASEDAO_LIGO_PATH")
+ $(fetchContract @(Parameter) @(FullStorage) "BASEDAO_LIGO_PATH")
