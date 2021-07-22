@@ -107,4 +107,4 @@ updateDelegates originateFn isDelegateFn = do
   withSender dodOwner1 $
     call dodDao (Call @"Update_delegate") [mkDelegate someAddr False]
 
-  isDelegateFn dodDao (Delegate dodOwner1 someAddr) @@== True
+  isDelegateFn dodDao (Delegate dodOwner1 someAddr) @@== False

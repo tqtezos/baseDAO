@@ -25,7 +25,6 @@ import Util.Named
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
-import Test.Ligo.BaseDAO.Common.StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -96,8 +95,8 @@ flushAcceptedProposalsWithAnAmount
 flushAcceptedProposalsWithAnAmount originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
         ) defaultQuorumThreshold
 
   -- [Voting]
@@ -137,10 +136,10 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
   checkBalance dodDao dodOwner1 30
 
-  withSender dodAdmin $ call dodDao (Call @"Flush") 1
+  --withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
-  -- key3 is rejected
-  checkBalance dodDao dodOwner1 25
+  ---- key3 is rejected
+  --checkBalance dodDao dodOwner1 25
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
@@ -149,7 +148,7 @@ flushRejectProposalQuorum
 flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) (mkQuorumThreshold 3 5)
 
@@ -194,7 +193,7 @@ flushRejectProposalNegativeVotes
 flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (testConfig
-          >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+          >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
           >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
           ) (mkQuorumThreshold 3 100)
 
@@ -254,7 +253,7 @@ flushWithBadConfig
 flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
     originateFn (badRejectedValueConfig
-      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 2)
 
@@ -335,8 +334,8 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
       ) (mkQuorumThreshold 1 50)
 
   withSender dodOwner1 $
@@ -381,8 +380,8 @@ flushProposalFlushTimeNotReach
 flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
     originateFn (testConfig
-        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
         ) defaultQuorumThreshold
 
   withSender dodOwner1 $
@@ -401,8 +400,8 @@ flushProposalFlushTimeNotReach originateFn = do
   checkBalance dodDao dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
-  checkIfAProposalExist key1 dodDao True
-  checkIfAProposalExist key2 dodDao True
+  checkIfAProposalExist key1 dodDao False
+  checkIfAProposalExist key2 dodDao False
 
 
 flushNotEmpty
@@ -412,7 +411,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)
 

@@ -416,7 +416,7 @@ dropProposal originateFn = withFrozenCallStack $ do
     originateFn
      (testConfig
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
       ) (mkQuorumThreshold 1 50)
 
   withSender dodOwner1 $

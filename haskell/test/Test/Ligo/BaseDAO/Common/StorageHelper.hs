@@ -17,9 +17,8 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import qualified Data.Map as M
+import qualified Data.Set as S
 import Morley.Nettest
-import Morley.Nettest.Pure (PureM)
 
 import Ligo.BaseDAO.Types
 
@@ -59,8 +58,14 @@ checkIfDelegateExists addr delegate = do
 checkIfAProposalExist
   :: forall p base caps m. MonadNettest caps base m
   => ProposalKey -> TAddress p -> Bool -> m ()
-checkIfAProposalExist proposalKey dodDao expected =
-  getProposal dodDao proposalKey >>= (flip assert "Proposal not found" . (== expected) . isJust)
+checkIfAProposalExist proposalKey dodDao expected = do
+  found <- getProposal dodDao proposalKey >>= \case
+    Nothing -> pure False
+    Just p -> do
+      proposalSet <- (sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorageRPC dodDao
+      pure $ S.member (plStartLevel p, proposalKey) proposalSet
+  assert (found == expected) $
+    "Unexpected proposal status, expected:" <> (show expected) <> ", found: " <> (show found)
 
 checkGuardian :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m ()
 checkGuardian addr guardianToChk = do
