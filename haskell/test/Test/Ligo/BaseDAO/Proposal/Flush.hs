@@ -98,6 +98,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
         ) defaultQuorumThreshold
+  originationLevel <- getOriginationLevel dodDao
 
   -- [Voting]
   withSender dodOwner1 $
@@ -106,7 +107,8 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
-  advanceLevel dodPeriod
+  -- advanceLevel dodPeriod
+  ensureLevel (originationLevel + dodPeriod)
 
   -- [Proposing]
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
@@ -120,7 +122,8 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         , vProposalKey = key
         }
 
-  advanceLevel dodPeriod
+  --advanceLevel dodPeriod
+  ensureLevel (originationLevel + 2 * dodPeriod)
 
   -- [Voting]
   withSender dodOwner2 . inBatch $ do
@@ -128,7 +131,8 @@ flushAcceptedProposalsWithAnAmount originateFn = do
       call dodDao (Call @"Vote") [vote' key2]
       pure ()
 
-  advanceLevel (dodPeriod + 1)
+  -- advanceLevel (dodPeriod + 1)
+  ensureLevel (originationLevel + 3 * dodPeriod)
 
   -- [Proposing]
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
@@ -136,10 +140,11 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
   checkBalance dodDao dodOwner1 30
 
-  --withSender dodAdmin $ call dodDao (Call @"Flush") 1
+  ensureLevel (originationLevel + 4 * dodPeriod)
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
   ---- key3 is rejected
-  --checkBalance dodDao dodOwner1 25
+  checkBalance dodDao dodOwner1 25
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
@@ -337,6 +342,7 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
       ) (mkQuorumThreshold 1 50)
+  originationLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
@@ -345,11 +351,13 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  -- advanceLevel dodPeriod
+  ensureLevel (originationLevel + dodPeriod)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  -- advanceLevel dodPeriod
+  ensureLevel (originationLevel + 2*dodPeriod)
   let params key = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 20
@@ -358,10 +366,12 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  -- advanceLevel dodPeriod
+  ensureLevel (originationLevel + 3*dodPeriod)
   _key2 <- createSampleProposal 2 dodOwner1 dodDao
 
-  advanceLevel (2*dodPeriod + 1)
+  -- advanceLevel (2*dodPeriod + 1)
+  ensureLevel (originationLevel + 5*dodPeriod + 1)
   -- `key1` is now expired, and `key2` is not yet expired.
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
     & expectCustomErrorNoArg #eXPIRED_PROPOSAL
@@ -415,6 +425,8 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       ) (mkQuorumThreshold 1 50)
 
+  originationLevel <- getOriginationLevel dodDao
+
   -- no proposal exist at this point, so flush is empty
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
     & expectCustomErrorNoArg #eMPTY_FLUSH
@@ -423,11 +435,14 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  -- advanceLevel dodPeriod
+  ensureLevel (originationLevel + dodPeriod)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
+  proposal <- fromMaybe (error "proposal not found") <$> getProposal dodDao key1
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  -- advanceLevel dodPeriod
+  ensureLevel (originationLevel + 2*dodPeriod)
   let params key = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 20
@@ -437,12 +452,14 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel (dodPeriod - 1)
+  -- advanceLevel (dodPeriod - 1)
+  ensureLevel (originationLevel + 3*dodPeriod - 1)
   -- the proposal exists at this point (and has votes), but it can't be flushed
   -- yet, because it needs one more level to meet the `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
     & expectCustomErrorNoArg #eMPTY_FLUSH
 
   -- however after one more level flushing is allowed
-  advanceLevel 1
+  -- advanceLevel 1
+  ensureLevel (plStartLevel proposal + 21)
   withSender dodAdmin $ call dodDao (Call @"Flush") 1

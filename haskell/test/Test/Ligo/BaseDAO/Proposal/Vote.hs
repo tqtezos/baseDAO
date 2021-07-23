@@ -107,6 +107,7 @@ proposalCorrectlyTrackVotes
   -> m ()
 proposalCorrectlyTrackVotes originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
+  originationLevel <- getOriginationLevel dodDao
 
   let proposer = dodOwner1
   let voter1 = dodOwner2
@@ -122,7 +123,7 @@ proposalCorrectlyTrackVotes originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 40)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  ensureLevel (originationLevel + dodPeriod)
 
   -- Create sample proposal
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
@@ -172,7 +173,7 @@ proposalCorrectlyTrackVotes originateFn = do
         ]
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  ensureLevel (originationLevel + 2*dodPeriod)
   withSender voter1 . inBatch $ do
     call dodDao (Call @"Vote") params1
     call dodDao (Call @"Vote") params3
@@ -341,6 +342,7 @@ voteWithPermitNonce
 voteWithPermitNonce originateFn = do
 
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
+  originationLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 60)
@@ -349,7 +351,7 @@ voteWithPermitNonce originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 50)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  ensureLevel (originationLevel + dodPeriod)
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -362,7 +364,7 @@ voteWithPermitNonce originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  ensureLevel (originationLevel + 2*dodPeriod)
   -- Going to try calls with different nonces
   signed1@(_          , _) <- addDataToSign dodDao (Nonce 0) voteParam
   signed2@(dataToSign2, _) <- addDataToSign dodDao (Nonce 1) voteParam

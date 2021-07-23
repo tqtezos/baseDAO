@@ -153,6 +153,7 @@ flushXtzTransfer
   => m ()
 flushXtzTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
+  originationLevel <- getOriginationLevel dodDao
 
   sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
@@ -171,7 +172,7 @@ flushXtzTransfer = withFrozenCallStack $ do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  ensureLevel (originationLevel + dodPeriod)
 
   withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
@@ -196,10 +197,10 @@ flushXtzTransfer = withFrozenCallStack $ do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  ensureLevel (originationLevel + 2*dodPeriod)
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
+  ensureLevel (originationLevel + 3*dodPeriod + 3)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: check xtz balance

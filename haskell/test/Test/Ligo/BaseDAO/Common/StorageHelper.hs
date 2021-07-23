@@ -12,6 +12,7 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   , getQtAtCycle
   , getStorageRPC
   , getVotePermitsCounter
+  , getOriginationLevel
   ) where
 
 import Lorentz hiding (assert, (>>))
@@ -88,3 +89,6 @@ sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUns
 getVotePermitsCounter :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Nonce
 getVotePermitsCounter addr =
   (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC addr
+
+getOriginationLevel :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Natural
+getOriginationLevel dodDao = (sStartLevelRPC . fsStorageRPC) <$> (getStorageRPC dodDao)

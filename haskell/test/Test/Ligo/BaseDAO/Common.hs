@@ -8,6 +8,7 @@ module Test.Ligo.BaseDAO.Common
   , OriginateFn
 
   , dummyFA2Contract
+  , ensureLevel
   , makeProposalKey
   , addDataToSign
   , permitProtect
@@ -225,3 +226,9 @@ checkStorage
 checkStorage addr expected = do
   realSt <- getStorage @st addr
   assert (expected == realSt) "Unexpected storage"
+
+ensureLevel :: MonadNettest caps base m => Natural -> m ()
+ensureLevel level = do
+  currentLevel <- getLevel
+  when (level > currentLevel) $
+    advanceLevel (level - currentLevel)
